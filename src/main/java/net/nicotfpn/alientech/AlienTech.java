@@ -1,6 +1,7 @@
 package net.nicotfpn.alientech;
 
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.nicotfpn.alientech.block.ModBlocks;
 import net.nicotfpn.alientech.item.ModItems;
 import org.slf4j.Logger;
 
@@ -46,6 +47,7 @@ public class AlienTech {
 
 
         ModItems.register(modEventBus);
+        ModBlocks.register(modEventBus);
         modEventBus.addListener(this::addtoCreativeTab);
 
 
@@ -54,8 +56,17 @@ public class AlienTech {
     }
 
 
+
+
+
+
+
+
+
+
+
     private void commonSetup(FMLCommonSetupEvent event) {
-        // Some common setup code
+
         LOGGER.info("HELLO FROM COMMON SETUP");
 
         if (Config.LOG_DIRT_BLOCK.getAsBoolean()) {
@@ -70,7 +81,8 @@ public class AlienTech {
     private void addtoCreativeTab(BuildCreativeModeTabContentsEvent event){
         if (event.getTabKey() == CreativeModeTabs.INGREDIENTS){
             event.accept(ModItems.GRAVITON);
-            event.accept(ModItems.GRAVION_DISK  );
+            event.accept(ModItems.GRAVION_DISK);
+            event.accept(ModBlocks.GRAVITON_ORE);
         }
     }
 
