@@ -1,6 +1,7 @@
 package net.nicotfpn.alientech;
 
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.nicotfpn.alientech.item.ModItems;
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
@@ -38,6 +39,19 @@ public class AlienTech {
     // Directly reference a slf4j logger
     public static final Logger LOGGER = LogUtils.getLogger();
 
+    public AlienTech(IEventBus modEventBus, ModContainer modContainer){
+        modEventBus.addListener(this::commonSetup);
+
+        NeoForge.EVENT_BUS.register(this);
+
+
+        ModItems.register(modEventBus);
+
+
+
+        modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
+    }
+
 
 
     private void commonSetup(FMLCommonSetupEvent event) {
@@ -51,6 +65,12 @@ public class AlienTech {
         LOGGER.info("{}{}", Config.MAGIC_NUMBER_INTRODUCTION.get(), Config.MAGIC_NUMBER.getAsInt());
 
         Config.ITEM_STRINGS.get().forEach((item) -> LOGGER.info("ITEM >> {}", item));
+    }
+
+    private void addCreative(BuildCreativeModeTabContentsEvent event){
+        if (event.getTabKey() == CreativeModeTabs.INGREDIENTS){
+            event.accept(ModItems.GRAVITON);
+        }
     }
 
 
