@@ -14,6 +14,9 @@
         public static final DeferredItem<Item> GRAVITON = ITEMS.register("graviton",
             () -> new Item(new Item.Properties()));
 
+        public static final DeferredItem<Item> GRAVION_DISK = ITEMS.register("gravion_disk",
+                () -> new Item(new Item.Properties()));
+
         public static void register(IEventBus eventBus){
             ITEMS.register(eventBus);
         }

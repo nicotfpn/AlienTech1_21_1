@@ -70,6 +70,7 @@ public class AlienTech {
     private void addtoCreativeTab(BuildCreativeModeTabContentsEvent event){
         if (event.getTabKey() == CreativeModeTabs.INGREDIENTS){
             event.accept(ModItems.GRAVITON);
+            event.accept(ModItems.GRAVION_DISK  );
         }
     }
 
