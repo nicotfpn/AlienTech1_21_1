@@ -46,11 +46,14 @@ public class AlienTech {
 
 
         ModItems.register(modEventBus);
+        modEventBus.addListener(this::addtoCreativeTab);
 
 
 
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
     }
+
+
     private void commonSetup(FMLCommonSetupEvent event) {
         // Some common setup code
         LOGGER.info("HELLO FROM COMMON SETUP");
