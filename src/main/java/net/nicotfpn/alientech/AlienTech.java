@@ -51,9 +51,6 @@ public class AlienTech {
 
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
     }
-
-
-
     private void commonSetup(FMLCommonSetupEvent event) {
         // Some common setup code
         LOGGER.info("HELLO FROM COMMON SETUP");
@@ -67,7 +64,7 @@ public class AlienTech {
         Config.ITEM_STRINGS.get().forEach((item) -> LOGGER.info("ITEM >> {}", item));
     }
 
-    private void addCreative(BuildCreativeModeTabContentsEvent event){
+    private void addtoCreativeTab(BuildCreativeModeTabContentsEvent event){
         if (event.getTabKey() == CreativeModeTabs.INGREDIENTS){
             event.accept(ModItems.GRAVITON);
         }

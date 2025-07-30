@@ -1,6 +1,6 @@
 {
-  "parent": "minecraft:item/generated",
+  "parent": "item/generated",
   "textures": {
-    "layer0": "alientech:item/graviton"
+    "layer0": "nicoalientech:item/graviton"
   }
 }
