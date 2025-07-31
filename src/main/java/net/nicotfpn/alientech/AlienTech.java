@@ -2,6 +2,7 @@ package net.nicotfpn.alientech;
 
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.nicotfpn.alientech.block.ModBlocks;
+import net.nicotfpn.alientech.item.ModCreativeModeTabs;
 import net.nicotfpn.alientech.item.ModItems;
 import org.slf4j.Logger;
 
@@ -45,6 +46,8 @@ public class AlienTech {
 
         NeoForge.EVENT_BUS.register(this);
 
+
+        ModCreativeModeTabs.register(this);
 
         ModItems.register(modEventBus);
         ModBlocks.register(modEventBus);
