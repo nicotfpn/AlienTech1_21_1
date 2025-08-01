@@ -47,7 +47,8 @@ public class AlienTech {
         NeoForge.EVENT_BUS.register(this);
 
 
-        ModCreativeModeTabs.register(this);
+        ModCreativeModeTabs.register(modEventBus);
+
 
         ModItems.register(modEventBus);
         ModBlocks.register(modEventBus);
