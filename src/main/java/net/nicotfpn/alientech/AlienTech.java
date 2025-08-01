@@ -86,7 +86,8 @@ public class AlienTech {
         if (event.getTabKey() == CreativeModeTabs.INGREDIENTS){
             event.accept(ModItems.GRAVITON);
             event.accept(ModItems.GRAVION_DISK);
-            event.accept(ModBlocks.GRAVITON_ORE);
+            event.accept(ModBlocks.NEUTRION_ORE);
+            event.accept(ModBlocks.NEUTRION_BLOCK);
         }
     }
 

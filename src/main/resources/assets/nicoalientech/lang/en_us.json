@@ -1,5 +1,7 @@
 {
   "item.nicoalientech.graviton": "Graviton",
-  "item.nicoalientech.graviton_ore": "Graviton Ore",
-  "item.nicoalientech.gravion_disk": "Gravion Disk"
+  "item.nicoalientech.neutrion_ore": "Neutrion Ore",
+  "item.nicoalientech.gravion_disk": "Gravion Disk",
+  "item.nicoalientech.neutrion_block": "Neutrion Block",
+  "item.nicoalientech.raw_neutrion": "Raw Neutrion"
 }

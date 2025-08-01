@@ -29,7 +29,11 @@ public class ModCreativeModeTabs {
                     .title(Component.translatable("creativetab.nicoalientech.alien_materials"))
                     .displayItems((itemDisplayParameters, output) -> {
                         output.accept(ModItems.GRAVITON);
-                        output.accept(ModBlocks.GRAVITON_ORE);
+                        output.accept(ModItems.NEUTRION_INGOT);
+                        output.accept(ModItems.RAW_NEUTRION);
+                        output.accept(ModBlocks.NEUTRION_ORE);
+                        output.accept(ModBlocks.NEUTRION_BLOCK);
+
                     }).build());
 
 

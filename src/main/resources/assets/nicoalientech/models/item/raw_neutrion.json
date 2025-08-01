@@ -1,0 +1,6 @@
+{
+  "parent": "item/generated",
+  "textures": {
+    "layer0": "nicoalientech:item/raw_neutrion"
+  }
+}

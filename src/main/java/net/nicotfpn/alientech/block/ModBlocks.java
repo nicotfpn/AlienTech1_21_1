@@ -18,7 +18,11 @@ public class ModBlocks {
     public static final DeferredRegister.Blocks BLOCKS =
             DeferredRegister.createBlocks(AlienTech.MODID);
 
-    public static final DeferredBlock<Block> GRAVITON_ORE = registerBlock("graviton_ore",
+    public static final DeferredBlock<Block> NEUTRION_ORE = registerBlock("neutrion_ore",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .strength(4f).requiresCorrectToolForDrops().sound(SoundType.AMETHYST)));
+
+    public static final DeferredBlock<Block> NEUTRION_BLOCK = registerBlock("neutrion_block",
             () -> new Block(BlockBehaviour.Properties.of()
                     .strength(4f).requiresCorrectToolForDrops().sound(SoundType.AMETHYST)));
 

@@ -17,6 +17,12 @@
         public static final DeferredItem<Item> GRAVION_DISK = ITEMS.register("gravion_disk",
                 () -> new Item(new Item.Properties()));
 
+        public static final DeferredItem<Item> NEUTRION_INGOT = ITEMS.register("neutrion_ingot",
+                () -> new Item(new Item.Properties()));
+
+        public static final DeferredItem<Item> RAW_NEUTRION = ITEMS.register("raw_neutrion",
+                () -> new Item(new Item.Properties()));
+
         public static void register(IEventBus eventBus){
             ITEMS.register(eventBus);
         }
