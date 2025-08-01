@@ -52,22 +52,12 @@ public class AlienTech {
 
         ModItems.register(modEventBus);
         ModBlocks.register(modEventBus);
-        modEventBus.addListener(this::addtoCreativeTab);
+
 
 
 
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
     }
-
-
-
-
-
-
-
-
-
-
 
     private void commonSetup(FMLCommonSetupEvent event) {
 
@@ -82,14 +72,7 @@ public class AlienTech {
         Config.ITEM_STRINGS.get().forEach((item) -> LOGGER.info("ITEM >> {}", item));
     }
 
-    private void addtoCreativeTab(BuildCreativeModeTabContentsEvent event){
-        if (event.getTabKey() == CreativeModeTabs.INGREDIENTS){
-            event.accept(ModItems.GRAVITON);
-            event.accept(ModItems.GRAVION_DISK);
-            event.accept(ModBlocks.NEUTRION_ORE);
-            event.accept(ModBlocks.NEUTRION_BLOCK);
-        }
-    }
+
 
 
     // You can use SubscribeEvent and let the Event Bus discover methods to call

@@ -1,7 +1,10 @@
 {
   "item.nicoalientech.graviton": "Graviton",
-  "item.nicoalientech.neutrion_ore": "Minério de Neutrino",
+  "block.nicoalientech.neutrion_ore": "Minério de Neutrino",
   "item.nicoalientech.gravion_disk": "Disco de Grávion",
-  "item.nicoalientech.neutrion_block": "Bloco de Neutrino",
-  "item.nicoalientech.raw_neutrion": "Neutrino Bruto"
+  "block.nicoalientech.neutrion_block": "Bloco de Neutrino",
+  "item.nicoalientech.raw_neutrion": "Neutrino Bruto",
+  "item.nicoalientech.neutrion_ingot": "Barra de Neutrino",
+  "creativetab.nicoalientech.alien_techs": "Tecnologias Alienigenas",
+  "creativetab.nicoalientech.alien_materials": "Materiais Alienigenas"
 }
