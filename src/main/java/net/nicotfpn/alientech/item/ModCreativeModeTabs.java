@@ -33,8 +33,11 @@ public class ModCreativeModeTabs {
                         output.accept(ModItems.RAW_NEUTRION);
                         output.accept(ModBlocks.NEUTRION_ORE);
                         output.accept(ModBlocks.NEUTRION_BLOCK);
+                        output.accept(ModBlocks.PRIMAL_CATALYST);
 
                     }).build());
+
+
 
 
     public static void register(IEventBus eventBus) {
