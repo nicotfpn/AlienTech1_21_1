@@ -1,0 +1,18 @@
+{
+    "name": "Graviton Contained",
+    "icon": "alientech:graviton_contained",
+    "category": "alientech:materials",
+    "sortnum": 6,
+    "pages": [
+        {
+            "type": "patchouli:text",
+            "title": "Graviton Contained",
+            "text": "A loose $(item)Graviton$() is a liability. It warps everything around it, makes nearby items float, occasionally implodes. The solution? Seal it inside a shell of $(item)Glass$().$(br2)The glass contains the gravitational field while keeping the particle's energy accessible. Think of it like a battery you really don't want to crack open."
+        },
+        {
+            "type": "patchouli:crafting",
+            "title": "Crafting",
+            "recipe": "alientech:graviton_contained"
+        }
+    ]
+}

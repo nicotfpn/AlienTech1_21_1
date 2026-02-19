@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "N": {
+      "item": "alientech:neutrion_ingot"
+    },
+    "G": {
+      "item": "alientech:graviton"
+    }
+  },
+  "pattern": [
+    "NNN",
+    "NGN",
+    "NNN"
+  ],
+  "result": {
+    "count": 1,
+    "id": "alientech:gravion_disk"
+  }
+}

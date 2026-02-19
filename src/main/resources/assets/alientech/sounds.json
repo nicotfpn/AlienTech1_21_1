@@ -1,0 +1,14 @@
+{
+  "block.alientech.primal_catalyst_working": {
+    "sounds": [
+      "alientech:block/primal_catalyst_working"
+    ],
+    "subtitle": "subtitles.alientech.primal_catalyst_working"
+  },
+  "block.alientech.primal_catalyst_complete": {
+    "sounds": [
+      "alientech:block/primal_catalyst_complete"
+    ],
+    "subtitle": "subtitles.alientech.primal_catalyst_complete"
+  }
+}

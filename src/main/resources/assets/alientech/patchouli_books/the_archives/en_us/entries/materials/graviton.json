@@ -1,0 +1,18 @@
+{
+    "name": "Graviton",
+    "icon": "alientech:graviton",
+    "category": "alientech:materials",
+    "sortnum": 5,
+    "pages": [
+        {
+            "type": "patchouli:text",
+            "title": "Graviton Particle",
+            "text": "This is where things get weird. A $(thing)Graviton$() is a synthetic particle that actually warps gravity around it. The recipe sounds almost absurd: a $(item)Nether Star$() at the core, $(item)Phantom Membrane$() for spectral binding, $(item)Diamond$() for structural integrity, and $(item)Inertial Stability Alloy$() to keep it from collapsing in on itself.$(br2)Yields 4 particles per craft. Handle with care."
+        },
+        {
+            "type": "patchouli:crafting",
+            "title": "Crafting",
+            "recipe": "alientech:graviton"
+        }
+    ]
+}

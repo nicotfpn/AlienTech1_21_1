@@ -1,0 +1,30 @@
+{
+    "name": "Neutrion",
+    "icon": "alientech:neutrion_ingot",
+    "category": "alientech:materials",
+    "sortnum": 0,
+    "pages": [
+        {
+            "type": "patchouli:text",
+            "title": "Neutrion Ore",
+            "text": "Dig deep enough and you'll start seeing a faint purple glow coming from the stone walls. That's $(thing)Neutrion Ore$(). It's the backbone of everything the Architects left behind.$(br2)Mine it with an iron pickaxe or better to get $(item)Raw Neutrion$(). Throw it in a furnace or blast furnace to get $(item)Neutrion Ingots$()."
+        },
+        {
+            "type": "patchouli:smelting",
+            "title": "Smelting",
+            "recipe": "alientech:neutrion_ingot_smelting"
+        },
+        {
+            "type": "patchouli:crafting",
+            "title": "Neutrion Block",
+            "text": "Pack 9 ingots into a block for storage. You can always unpack them later.",
+            "recipe": "alientech:neutrion_block"
+        },
+        {
+            "type": "patchouli:crafting",
+            "title": "Ingots from Block",
+            "text": "Place the block in a crafting grid to get your 9 ingots back.",
+            "recipe": "alientech:neutrion_ingot_from_block"
+        }
+    ]
+}

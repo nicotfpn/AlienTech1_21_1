@@ -1,0 +1,19 @@
+{
+    "type": "alientech:primal_catalyst",
+    "ingredients": [
+        {
+            "item": "alientech:concentrated_substrate"
+        },
+        {
+            "item": "alientech:neutrion_ingot"
+        },
+        {
+            "item": "alientech:graviton"
+        }
+    ],
+    "result": {
+        "id": "alientech:inertial_stability_alloy",
+        "count": 1
+    },
+    "energy_modifier": 1.0
+}

@@ -1,0 +1,21 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "pattern": [
+        " I ",
+        "INI",
+        " I "
+    ],
+    "key": {
+        "I": {
+            "item": "minecraft:iron_ingot"
+        },
+        "N": {
+            "item": "alientech:neutrion_ingot"
+        }
+    },
+    "result": {
+        "id": "alientech:inertial_stability_alloy",
+        "count": 1
+    }
+}

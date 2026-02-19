@@ -1,0 +1,26 @@
+{
+    "name": "The Archives",
+    "landing_text": "$(br2)You hold the $(thing)Eye of Horus$(), a relic of a civilization that walked among the stars long before humanity learned to build with stone.$(br2)These $(italic)Archives$() preserve what the Architects left behind: their technology, their materials, and perhaps the means to bring them back.$(br2)Use the tabs on the left to explore.",
+    "book_texture": "patchouli:textures/gui/book_brown.png",
+    "text_color": "D4AF37",
+    "header_color": "FFD700",
+    "nameplate_color": "D4AF37",
+    "link_color": "FFD700",
+    "link_hover_color": "FFFF00",
+    "use_blocky_font": false,
+    "use_resource_pack": true,
+    "show_progress": true,
+    "version": "2",
+    "subtitle": "Alien Technology Compendium",
+    "creative_tab": "alientech",
+    "advancements_tab": "",
+    "dont_generate_book": true,
+    "custom_book_item": "alientech:horus_eye",
+    "show_toasts": false,
+    "macros": {
+        "$(alien)": "$(#9B59B6)",
+        "$(gold)": "$(#FFD700)",
+        "$(energy)": "$(#55FF55)",
+        "$(warn)": "$(#FF5555)"
+    }
+}

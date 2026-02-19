@@ -1,0 +1,30 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "redstone",
+    "pattern": [
+        "NGN",
+        "RER",
+        "BBB"
+    ],
+    "key": {
+        "N": {
+            "item": "alientech:neutrion_ingot"
+        },
+        "G": {
+            "item": "minecraft:gold_block"
+        },
+        "R": {
+            "item": "minecraft:redstone_block"
+        },
+        "E": {
+            "item": "alientech:exotic_substrate"
+        },
+        "B": {
+            "item": "minecraft:stone_bricks"
+        }
+    },
+    "result": {
+        "id": "alientech:ancient_battery",
+        "count": 1
+    }
+}

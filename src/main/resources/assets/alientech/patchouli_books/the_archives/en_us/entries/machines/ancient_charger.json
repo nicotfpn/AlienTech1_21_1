@@ -1,0 +1,23 @@
+{
+    "name": "Ancient Charger",
+    "icon": "alientech:ancient_charger",
+    "category": "alientech:machines",
+    "sortnum": 2,
+    "pages": [
+        {
+            "type": "patchouli:text",
+            "title": "Ancient Charger",
+            "text": "The $(thing)Ancient Charger$() serves two purposes. First, it works as an energy buffer. Place it next to a $(l:alientech:machines/pyramid_core)Pyramid Core$() and it will absorb the generated power. Second, it charges items.$(br2)Drop any energy-capable item into its slot (like the $(l:alientech:artifacts/horus_eye)Activated Eye of Horus$()) and it will fill it up."
+        },
+        {
+            "type": "patchouli:crafting",
+            "title": "Crafting",
+            "recipe": "alientech:ancient_charger"
+        },
+        {
+            "type": "patchouli:text",
+            "title": "Usage Tips",
+            "text": "The Charger accepts energy from any adjacent block on any side. It also outputs energy to any adjacent block.$(br2)A charging bar below the item slot shows the current charge level of the inserted item.$(br2)$(italic)Tip: Chain multiple Chargers together for faster item charging, or use them as energy relays between your Core and your machines.$()"
+        }
+    ]
+}

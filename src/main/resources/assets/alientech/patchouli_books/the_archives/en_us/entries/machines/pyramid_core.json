@@ -1,0 +1,33 @@
+{
+    "name": "Pyramid Core",
+    "icon": "alientech:pyramid_core",
+    "category": "alientech:machines",
+    "sortnum": 1,
+    "pages": [
+        {
+            "type": "patchouli:text",
+            "title": "Pyramid Core",
+            "text": "The heart of everything. The $(thing)Pyramid Core$() is a power generator that sits at the top of a sandstone and gold pyramid. Insert a $(item)Graviton$() as fuel and it starts producing FE.$(br2)Without the right structure underneath, it won't do anything."
+        },
+        {
+            "type": "patchouli:crafting",
+            "title": "Crafting the Core",
+            "recipe": "alientech:pyramid_core"
+        },
+        {
+            "type": "patchouli:text",
+            "title": "Pyramid Structure",
+            "text": "Build the structure layer by layer below the Core, all centered:$(br2)$(bold)Top: Pyramid Core$()$(br)Place the Core block here.$(br2)$(bold)Layer 1$() (1 below Core):$(br)3x3 $(item)Gold Blocks$()$(br2)$(bold)Layer 2$() (2 below Core):$(br)5x5 $(item)Sandstone$()$(br2)$(bold)Layer 3$() (3 below Core):$(br)7x7 $(item)Sandstone$()$(br2)$(bold)Layer 4$() (4 below Core):$(br)9x9 $(item)Sandstone$()"
+        },
+        {
+            "type": "patchouli:text",
+            "title": "Sandstone Types",
+            "text": "Any of these sandstone variants work for Layers 2-4:$(br2)$(li)Sandstone$(li)Chiseled Sandstone$(li)Cut Sandstone$(li)Smooth Sandstone$(br2)You can mix and match them freely within the same layer."
+        },
+        {
+            "type": "patchouli:text",
+            "title": "Activation & Fuel",
+            "text": "Once the structure is built, right-click the Core to open its GUI. Place a $(item)Graviton$() in the fuel slot and use an $(item)Ancient Ankh$() on the structure to activate it.$(br2)The Core generates FE continuously while active. Each Graviton is slowly consumed as energy is produced. Place an $(l:alientech:machines/ancient_charger)Ancient Charger$() next to the Core to buffer and distribute the energy.$(br2)$(italic)Tip: The Core outputs energy from all 6 sides.$()"
+        }
+    ]
+}

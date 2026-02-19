@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:smelting",
+  "category": "misc",
+  "cookingtime": 200,
+  "experience": 0.5,
+  "group": "neutrion_ingot",
+  "ingredient":
+    {
+      "item": "alientech:neutrion_ore"
+    },
+
+  "result": {
+    "count": 1,
+    "id": "alientech:neutrion_ingot"
+  }
+}

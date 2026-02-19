@@ -1,0 +1,19 @@
+{
+    "variants": {
+        "facing=east": {
+            "model": "alientech:block/primal_catalyst",
+            "y": 90
+        },
+        "facing=north": {
+            "model": "alientech:block/primal_catalyst"
+        },
+        "facing=south": {
+            "model": "alientech:block/primal_catalyst",
+            "y": 180
+        },
+        "facing=west": {
+            "model": "alientech:block/primal_catalyst",
+            "y": 270
+        }
+    }
+}
