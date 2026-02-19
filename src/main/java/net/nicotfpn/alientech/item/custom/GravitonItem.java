@@ -1,4 +1,11 @@
 package net.nicotfpn.alientech.item.custom;
 
-public class GravitonItem {
+import net.minecraft.world.item.Item;
+
+public class GravitonItem extends Item {
+    public GravitonItem(Properties properties) {
+        super(properties);
+    }
 }
+
+

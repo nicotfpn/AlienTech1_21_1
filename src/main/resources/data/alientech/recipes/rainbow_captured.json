@@ -1,0 +1,21 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "pattern": [
+        " G ",
+        "GDG",
+        " G "
+    ],
+    "key": {
+        "G": {
+            "item": "minecraft:glass"
+        },
+        "D": {
+            "item": "minecraft:diamond"
+        }
+    },
+    "result": {
+        "id": "alientech:rainbow_captured",
+        "count": 1
+    }
+}

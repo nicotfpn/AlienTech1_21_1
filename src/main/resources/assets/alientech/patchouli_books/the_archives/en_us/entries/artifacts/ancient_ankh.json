@@ -1,0 +1,18 @@
+{
+    "name": "Ancient Ankh",
+    "icon": "alientech:ancient_ankh",
+    "category": "alientech:artifacts",
+    "sortnum": 0,
+    "pages": [
+        {
+            "type": "patchouli:text",
+            "title": "Ancient Ankh",
+            "text": "The $(thing)Ancient Ankh$() is, frankly, terrifying. When you're about to die, it activates. Your health refills, the damage vanishes, and the Ankh crumbles to dust. One use, one life saved.$(br2)The Architects clearly valued life above all else. This was probably the most common artifact in the old world. We still find fragments of them everywhere."
+        },
+        {
+            "type": "patchouli:crafting",
+            "title": "Crafting",
+            "recipe": "alientech:ancient_ankh"
+        }
+    ]
+}

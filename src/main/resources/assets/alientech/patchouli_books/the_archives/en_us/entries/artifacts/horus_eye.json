@@ -1,0 +1,23 @@
+{
+    "name": "Eye of Horus",
+    "icon": "alientech:horus_eye",
+    "category": "alientech:artifacts",
+    "sortnum": 1,
+    "pages": [
+        {
+            "type": "patchouli:text",
+            "title": "Eye of Horus",
+            "text": "You're holding one right now. The $(thing)Eye of Horus$() is both a key and a container. In its base form, right-clicking it opens these very Archives, the collective knowledge of the Architects.$(br2)But the Eye has a second function. When charged in an $(l:alientech:machines/ancient_charger)Ancient Charger$(), it becomes an $(item)Activated Eye of Horus$(), a portable energy storage device holding up to $(energy)5,000,000 FE$()."
+        },
+        {
+            "type": "patchouli:crafting",
+            "title": "Crafting the Eye",
+            "recipe": "alientech:horus_eye"
+        },
+        {
+            "type": "patchouli:text",
+            "title": "Activation",
+            "text": "To activate the Eye, place it inside an $(l:alientech:machines/ancient_charger)Ancient Charger$() and let it absorb energy. Once it has any charge, it transforms into its activated form.$(br2)The activated Eye stores massive amounts of FE and can power other items or machines. It's essentially the Architects' version of a portable battery, except it also contains all of human history in its memory banks."
+        }
+    ]
+}

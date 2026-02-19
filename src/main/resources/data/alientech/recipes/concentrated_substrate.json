@@ -1,0 +1,24 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "pattern": [
+        "SCS",
+        "CRC",
+        "SCS"
+    ],
+    "key": {
+        "S": {
+            "item": "minecraft:sand"
+        },
+        "C": {
+            "item": "minecraft:clay_ball"
+        },
+        "R": {
+            "item": "minecraft:redstone"
+        }
+    },
+    "result": {
+        "id": "alientech:concentrated_substrate",
+        "count": 2
+    }
+}

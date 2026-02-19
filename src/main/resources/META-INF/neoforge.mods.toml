@@ -3,20 +3,29 @@ loaderVersion = "[4,)"
 license = "MIT"
 
 [[mods]]
-modId = "nicoalientech"
+modId = "alientech"
 version = "1.0.0"
 displayName = "Alien Tech"
 description = "Tecnologia alienígena para Minecraft"
 authors = "NicotFPN"
 
-[[dependencies]]
+[[dependencies.alientech]]
 modId = "minecraft"
+type = "required"
 versionRange = "[1.21.1,1.22)"
 ordering = "NONE"
 side = "BOTH"
 
-[[dependencies]]
+[[dependencies.alientech]]
 modId = "neoforge"
+type = "required"
 versionRange = "[21.1.115,)"
 ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.alientech]]
+modId = "patchouli"
+type = "optional"
+versionRange = "[1.21.1-92,)"
+ordering = "AFTER"
 side = "BOTH"

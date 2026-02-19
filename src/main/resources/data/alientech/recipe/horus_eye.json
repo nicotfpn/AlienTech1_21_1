@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "E": {
+      "item": "alientech:exotic_substrate"
+    },
+    "G": {
+      "item": "alientech:gravion_disk"
+    },
+    "A": {
+      "item": "alientech:ancient_ankh"
+    }
+  },
+  "pattern": [
+    "EGE",
+    "GAG",
+    "EGE"
+  ],
+  "result": {
+    "count": 1,
+    "id": "alientech:horus_eye"
+  }
+}

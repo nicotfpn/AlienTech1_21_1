@@ -1,0 +1,27 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "pattern": [
+        " P ",
+        "ASA",
+        " D "
+    ],
+    "key": {
+        "P": {
+            "item": "minecraft:phantom_membrane"
+        },
+        "A": {
+            "item": "alientech:inertial_stability_alloy"
+        },
+        "S": {
+            "item": "minecraft:nether_star"
+        },
+        "D": {
+            "item": "minecraft:diamond"
+        }
+    },
+    "result": {
+        "id": "alientech:graviton",
+        "count": 4
+    }
+}

@@ -1,0 +1,28 @@
+{
+    "name": "The Arrival",
+    "icon": "alientech:neutrion_ingot",
+    "category": "alientech:lore",
+    "sortnum": 0,
+    "pages": [
+        {
+            "type": "patchouli:text",
+            "title": "The Arrival",
+            "text": "Nobody really knows when they first came. The oldest records we could find, carved into stone beneath the Sahara, describe a night where the entire sky turned a deep, impossible purple. Not like a sunset. More like the sky itself was breathing.$(br2)The villagers thought the world was ending. It wasn't. It was beginning."
+        },
+        {
+            "type": "patchouli:text",
+            "title": "First Contact",
+            "text": "They came down in silence. No thunder, no fire, no dramatic entrance. Just shapes, descending through that purple haze like shadows made solid. Tall. Too tall. Their skin, if you could call it that, shimmered like oil on water.$(br2)The locals called them Architects. Not because anyone asked for their names, but because of what they did next."
+        },
+        {
+            "type": "patchouli:text",
+            "title": "The Gift",
+            "text": "Within days, the Architects began teaching. They showed humanity how to extract $(item)Neutrion$() from deep stone, how to shape it, how to channel energy through it. Technologies that our best scientists still can't fully understand, handed over like a parent teaching a child to walk.$(br2)Why? We never found out. Maybe they pitied us. Maybe they needed something from us. The records don't say."
+        },
+        {
+            "type": "patchouli:text",
+            "title": "The Golden Age",
+            "text": "For a time, maybe centuries, maybe longer, humanity thrived. The pyramids were built, not as tombs, but as $(thing)energy collectors$(). Every village had access to limitless power. Disease was rare. The deserts bloomed.$(br2)People started to forget what the world was like before. They started to believe they had earned it all themselves."
+        }
+    ]
+}

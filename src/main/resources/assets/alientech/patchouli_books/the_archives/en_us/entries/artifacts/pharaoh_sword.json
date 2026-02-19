@@ -1,0 +1,23 @@
+{
+    "name": "Pharaoh's Sword",
+    "icon": "alientech:pharaoh_sword",
+    "category": "alientech:artifacts",
+    "sortnum": 2,
+    "pages": [
+        {
+            "type": "patchouli:text",
+            "title": "Pharaoh's Sword",
+            "text": "Nobody knows who the first Pharaoh was. But whoever they were, the Architects gave them this blade. The $(thing)Pharaoh's Sword$() hits insanely hard and makes its wielder immune to fire.$(br2)And it doesn't break. Ever. The Architects built it to outlast civilizations. Judging by the fact that we're reading about it, they succeeded."
+        },
+        {
+            "type": "patchouli:text",
+            "title": "Ritual Crafting",
+            "text": "This sword cannot be crafted on a table. It requires a $(bold)Ground Ritual$(). Drop the following 4 items on the ground, close to each other (within 1.5 blocks):$(br2)$(li)$(item)Inertial Stability Alloy$()$(li)$(item)Netherite Sword$()$(li)$(item)Nether Star$()$(li)$(item)Ancient Ankh$()$(br2)When all four items are near each other, the ritual triggers automatically with a burst of light and particles."
+        },
+        {
+            "type": "patchouli:text",
+            "title": "Combat Properties",
+            "text": "$(bold)Damage$(): Extremely high$(br)$(bold)Fire Resistance$(): Passive while held$(br)$(bold)Durability$(): Unbreakable$(br2)$(italic)The Ankh is consumed in the ritual. Make sure you have a spare if you still want death protection.$()"
+        }
+    ]
+}

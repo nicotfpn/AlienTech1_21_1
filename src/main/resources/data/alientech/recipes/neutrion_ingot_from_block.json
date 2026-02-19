@@ -1,0 +1,13 @@
+{
+    "type": "minecraft:crafting_shapeless",
+    "category": "misc",
+    "ingredients": [
+        {
+            "item": "alientech:neutrion_block"
+        }
+    ],
+    "result": {
+        "id": "alientech:neutrion_ingot",
+        "count": 9
+    }
+}

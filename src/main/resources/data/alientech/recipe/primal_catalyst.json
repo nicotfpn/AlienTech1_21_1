@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "A": {
+      "item": "alientech:concentrated_substrate"
+    },
+    "B": {
+      "item": "alientech:neutrion_ingot"
+    },
+    "C": {
+      "item": "alientech:gravion_disk"
+    }
+  },
+  "pattern": [
+    "ACA",
+    "CBC",
+    "ACA"
+  ],
+  "result": {
+    "count": 1,
+    "id": "alientech:primal_catalyst"
+  }
+}

@@ -1,0 +1,23 @@
+{
+    "name": "Primal Catalyst",
+    "icon": "alientech:primal_catalyst",
+    "category": "alientech:machines",
+    "sortnum": 0,
+    "pages": [
+        {
+            "type": "patchouli:text",
+            "title": "Primal Catalyst",
+            "text": "The $(thing)Primal Catalyst$() is an ancient machine left behind by the Architects. It cannot be crafted—only found in ancient ruins or obtained through creative mode. Its purpose: transmuting base materials into advanced alloys.$(br2)It runs on $(thing)Forge Energy$() (40 FE/tick, 100,000 FE capacity) or $(thing)Coal Blocks$() as a fallback fuel."
+        },
+        {
+            "type": "patchouli:text",
+            "title": "Recipe: Inertial Stability Alloy",
+            "text": "The Catalyst has 3 input slots, 1 fuel slot, and 1 output slot. To create $(item)Inertial Stability Alloy$(), place these 3 items in any order, one per slot:$(br2)$(li)$(item)Concentrated Substrate$()$(li)$(item)Neutrion Ingot$()$(li)$(item)Graviton$()$(br2)The machine processes them automatically and produces $(item)Inertial Stability Alloy$() in the output slot."
+        },
+        {
+            "type": "patchouli:text",
+            "title": "Power & Automation",
+            "text": "The Catalyst uses $(thing)FE energy$() first. If no energy is available, it burns $(item)Coal Blocks$() as fallback fuel.$(br2)$(bold)Sided automation:$()$(br)$(li)$(thing)Top$() — insert ingredients$(li)$(thing)Sides$() — insert Coal Blocks$(li)$(thing)Bottom$() — extract output$(br2)Output items are also auto-pushed to adjacent inventories every half second.$(br2)$(italic)This is the only way to create Inertial Stability Alloy.$()"
+        }
+    ]
+}

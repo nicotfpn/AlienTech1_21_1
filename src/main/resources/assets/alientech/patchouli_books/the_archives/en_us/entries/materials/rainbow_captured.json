@@ -1,0 +1,18 @@
+{
+    "name": "Rainbow Captured",
+    "icon": "alientech:rainbow_captured",
+    "category": "alientech:materials",
+    "sortnum": 3,
+    "pages": [
+        {
+            "type": "patchouli:text",
+            "title": "Rainbow Captured",
+            "text": "The Architects could trap light. Not reflect it, not refract it, actually $(italic)trap$() it inside $(item)Glass$(), using a $(item)Diamond$() as an anchor point.$(br2)The result is a crystalline sphere that glows with every color at once. It never dims, never fades. Even after thousands of years, the ones we've found still shine like the day they were made."
+        },
+        {
+            "type": "patchouli:crafting",
+            "title": "Crafting",
+            "recipe": "alientech:rainbow_captured"
+        }
+    ]
+}

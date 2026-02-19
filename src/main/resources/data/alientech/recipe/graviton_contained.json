@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "G": {
+      "item": "alientech:graviton"
+    },
+    "C": {
+      "item": "alientech:concentrated_substrate"
+    }
+  },
+  "pattern": [
+    "GCG",
+    "CGC",
+    "GCG"
+  ],
+  "result": {
+    "count": 1,
+    "id": "alientech:graviton_contained"
+  }
+}

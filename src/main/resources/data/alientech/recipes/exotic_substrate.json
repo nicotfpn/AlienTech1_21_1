@@ -1,0 +1,27 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "pattern": [
+        " E ",
+        "CSC",
+        " B "
+    ],
+    "key": {
+        "E": {
+            "item": "minecraft:ender_eye"
+        },
+        "S": {
+            "item": "alientech:concentrated_substrate"
+        },
+        "C": {
+            "item": "minecraft:chorus_fruit"
+        },
+        "B": {
+            "item": "minecraft:blaze_powder"
+        }
+    },
+    "result": {
+        "id": "alientech:exotic_substrate",
+        "count": 1
+    }
+}

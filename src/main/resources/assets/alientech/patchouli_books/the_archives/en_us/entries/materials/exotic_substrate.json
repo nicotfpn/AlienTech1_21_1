@@ -1,0 +1,18 @@
+{
+    "name": "Exotic Substrate",
+    "icon": "alientech:exotic_substrate",
+    "category": "alientech:materials",
+    "sortnum": 2,
+    "pages": [
+        {
+            "type": "patchouli:text",
+            "title": "Exotic Substrate",
+            "text": "Take your $(item)Concentrated Substrate$() and infuse it with materials from dimensions that really shouldn't exist. An $(item)Ender Eye$() for spatial distortion, $(item)Chorus Fruit$() for dimensional resonance, and $(item)Blaze Powder$() to bind it all together.$(br2)The result is a material that doesn't quite exist in any single dimension. Uncomfortable to hold, to say the least."
+        },
+        {
+            "type": "patchouli:crafting",
+            "title": "Crafting",
+            "recipe": "alientech:exotic_substrate"
+        }
+    ]
+}

@@ -1,0 +1,18 @@
+{
+    "name": "Concentrated Substrate",
+    "icon": "alientech:concentrated_substrate",
+    "category": "alientech:materials",
+    "sortnum": 1,
+    "pages": [
+        {
+            "type": "patchouli:text",
+            "title": "Concentrated Substrate",
+            "text": "At first glance, nothing special. $(item)Sand$(), $(item)Clay$(), and a pinch of $(item)Redstone$(). But the Architects figured out that when you combine these in the right proportions, the mixture starts absorbing ambient energy like a sponge.$(br2)You'll need a lot of this stuff. It shows up in recipes everywhere."
+        },
+        {
+            "type": "patchouli:crafting",
+            "title": "Crafting",
+            "recipe": "alientech:concentrated_substrate"
+        }
+    ]
+}

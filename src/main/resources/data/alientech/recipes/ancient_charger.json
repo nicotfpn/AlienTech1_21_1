@@ -1,0 +1,27 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "pattern": [
+        " G ",
+        "NBN",
+        "SSS"
+    ],
+    "key": {
+        "G": {
+            "item": "minecraft:gold_ingot"
+        },
+        "N": {
+            "item": "alientech:neutrion_ingot"
+        },
+        "B": {
+            "item": "alientech:ancient_battery"
+        },
+        "S": {
+            "item": "minecraft:smooth_sandstone"
+        }
+    },
+    "result": {
+        "id": "alientech:ancient_charger",
+        "count": 1
+    }
+}

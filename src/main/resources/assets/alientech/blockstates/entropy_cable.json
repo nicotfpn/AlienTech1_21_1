@@ -1,0 +1,7 @@
+{
+    "variants": {
+        "": {
+            "model": "alientech:block/entropy_cable"
+        }
+    }
+}

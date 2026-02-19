@@ -1,0 +1,18 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "pattern": [
+        "III",
+        "III",
+        "III"
+    ],
+    "key": {
+        "I": {
+            "item": "alientech:inertial_stability_alloy"
+        }
+    },
+    "result": {
+        "id": "minecraft:bedrock",
+        "count": 1
+    }
+}

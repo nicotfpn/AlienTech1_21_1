@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "H": {
+      "item": "alientech:horus_eye"
+    },
+    "N": {
+      "item": "alientech:neutrion_ingot"
+    }
+  },
+  "pattern": [
+    "NHN",
+    "HHH",
+    "NHN"
+  ],
+  "result": {
+    "count": 1,
+    "id": "alientech:horus_eye_activated"
+  }
+}

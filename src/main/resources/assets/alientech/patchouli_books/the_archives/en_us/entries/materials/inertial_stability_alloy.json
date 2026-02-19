@@ -1,0 +1,24 @@
+{
+    "name": "Inertial Stability Alloy",
+    "icon": "alientech:inertial_stability_alloy",
+    "category": "alientech:materials",
+    "sortnum": 7,
+    "pages": [
+        {
+            "type": "patchouli:text",
+            "title": "Inertial Stability Alloy",
+            "text": "Probably the Architects' most elegant invention. A metal that resists any change in its state of motion, meaning nothing can push it, pull it, or break it by force alone.$(br2)It's the key ingredient in the $(l:alientech:machines/pyramid_core)Pyramid Core$() and several other advanced recipes. Without it, the energy feedback would rip any structure apart."
+        },
+        {
+            "type": "patchouli:text",
+            "title": "How to Craft",
+            "text": "This alloy can $(bold)only$() be crafted in the $(l:alientech:machines/primal_catalyst)Primal Catalyst$(). Place one of each in the 3 input slots:$(br2)$(li)$(item)Concentrated Substrate$()$(li)$(item)Neutrion Ingot$()$(li)$(item)Graviton$()$(br2)The Catalyst will process them automatically.$(br2)$(warn)There is no crafting table recipe for this item.$()"
+        },
+        {
+            "type": "patchouli:crafting",
+            "title": "Bedrock Synthesis",
+            "text": "Fill an entire crafting table with 9 of these alloys to create the unbreakable: pure $(item)Bedrock$().",
+            "recipe": "alientech:bedrock"
+        }
+    ]
+}

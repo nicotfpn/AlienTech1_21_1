@@ -1,0 +1,28 @@
+{
+    "name": "The Great Silence",
+    "icon": "alientech:graviton",
+    "category": "alientech:lore",
+    "sortnum": 1,
+    "pages": [
+        {
+            "type": "patchouli:text",
+            "title": "The Great Silence",
+            "text": "It happened without warning. One morning, the energy stopped flowing. The pyramids went dark. Every piece of alien technology on the planet shut down at the exact same moment, like someone had pulled a plug nobody knew existed.$(br2)The Architects were gone."
+        },
+        {
+            "type": "patchouli:text",
+            "title": "What We Lost",
+            "text": "The chaos that followed was catastrophic. Civilizations that had depended entirely on alien energy collapsed overnight. Wars broke out over the scraps of technology that still functioned. Knowledge was lost, burned, buried. Within a few generations, most of humanity forgot the Architects had ever existed.$(br2)The pyramids were repurposed as tombs. The technology was dismissed as myth."
+        },
+        {
+            "type": "patchouli:text",
+            "title": "The Echoes",
+            "text": "But not everything was lost. Deep underground, in places the wars never reached, some of the old tech survived. $(item)Neutrion$() ore still pulses in the deep stone. The $(item)Eye of Horus$() still responds to touch. And the blueprints for the Pyramid Core were carved into bedrock itself.$(br2)Someone, somewhere, planned for this."
+        },
+        {
+            "type": "patchouli:text",
+            "title": "The Prophecy",
+            "text": "There is one more carving. Found beneath the Great Pyramid, scratched into the foundation stone in a language we barely understand. Our best translation:$(br2)$(italic)\"When three pyramids burn again under the same sky, the door will open. We will return.\"$()$(br2)$(warn)This part of the story has not yet been fulfilled...$()$(br2)$(thing)The Three Pyramids feature is a work in progress.$()"
+        }
+    ]
+}

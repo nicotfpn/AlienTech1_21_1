@@ -1,0 +1,24 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "combat",
+    "pattern": [
+        " H ",
+        " N ",
+        " G "
+    ],
+    "key": {
+        "H": {
+            "item": "alientech:horus_eye"
+        },
+        "N": {
+            "item": "alientech:neutrion_ingot"
+        },
+        "G": {
+            "item": "minecraft:gold_block"
+        }
+    },
+    "result": {
+        "id": "alientech:pharaoh_sword",
+        "count": 1
+    }
+}

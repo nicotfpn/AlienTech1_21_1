@@ -1,7 +1,7 @@
 {
   "replace": false,
   "values": [
-    "nicoalientech:neutrion_block",
-    "nicoalientech:neutrion_ore"
+    "alientech:neutrion_block",
+    "alientech:neutrion_ore"
   ]
 }

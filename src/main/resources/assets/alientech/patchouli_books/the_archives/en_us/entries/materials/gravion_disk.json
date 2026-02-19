@@ -1,0 +1,18 @@
+{
+    "name": "Gravion Disk",
+    "icon": "alientech:gravion_disk",
+    "category": "alientech:materials",
+    "sortnum": 4,
+    "pages": [
+        {
+            "type": "patchouli:text",
+            "title": "Gravion Disk",
+            "text": "A raw $(item)Graviton$() is dangerous. It warps the space around it, pulls things toward it, makes you feel heavier just standing nearby. So the Architects surrounded it with $(item)Neutrion Ingots$() in a disk shape.$(br2)The disk stabilizes the gravitational field enough to make it safe to handle. Mostly safe, anyway. Don't drop it."
+        },
+        {
+            "type": "patchouli:crafting",
+            "title": "Crafting",
+            "recipe": "alientech:gravion_disk"
+        }
+    ]
+}
