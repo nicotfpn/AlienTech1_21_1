@@ -1,0 +1,22 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license = "MIT"
+
+[[mods]]
+modId = "nicoalientech"
+version = "1.0.0"
+displayName = "Alien Tech"
+description = "Tecnologia alienígena para Minecraft"
+authors = "NicotFPN"
+
+[[dependencies]]
+modId = "minecraft"
+versionRange = "[1.21.1,1.22)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies]]
+modId = "neoforge"
+versionRange = "[21.1.115,)"
+ordering = "NONE"
+side = "BOTH"

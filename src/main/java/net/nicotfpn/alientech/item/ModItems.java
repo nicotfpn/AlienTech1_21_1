@@ -1,34 +1,31 @@
-    package net.nicotfpn.alientech.item;
+package net.nicotfpn.alientech.item;
 
-    import net.minecraft.world.item.Item;
-    import net.neoforged.bus.api.IEventBus;
-    import net.neoforged.neoforge.registries.DeferredItem;
-    import net.neoforged.neoforge.registries.DeferredRegister;
-    import net.nicotfpn.alientech.AlienTech;
+import net.minecraft.world.item.Item;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.registries.DeferredItem;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.nicotfpn.alientech.AlienTech;
+import net.nicotfpn.alientech.item.custom.AnkhItem;
 
-    import javax.swing.*;
+public class ModItems {
+    public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(AlienTech.MODID);
 
-    public class ModItems {
-        public static final DeferredRegister.Items  ITEMS = DeferredRegister.createItems(AlienTech.MODID);
-
-        public static final DeferredItem<Item> GRAVITON = ITEMS.register("graviton",
+    public static final DeferredItem<Item> GRAVITON = ITEMS.register("graviton",
             () -> new Item(new Item.Properties()));
 
-        public static final DeferredItem<Item> GRAVION_DISK = ITEMS.register("gravion_disk",
-                () -> new Item(new Item.Properties()));
+    public static final DeferredItem<Item> GRAVION_DISK = ITEMS.register("gravion_disk",
+            () -> new Item(new Item.Properties()));
 
-        public static final DeferredItem<Item> NEUTRION_INGOT = ITEMS.register("neutrion_ingot",
-                () -> new Item(new Item.Properties()));
+    public static final DeferredItem<Item> NEUTRION_INGOT = ITEMS.register("neutrion_ingot",
+            () -> new Item(new Item.Properties()));
 
-        public static final DeferredItem<Item> RAW_NEUTRION = ITEMS.register("raw_neutrion",
-                () -> new Item(new Item.Properties()));
+    public static final DeferredItem<Item> RAW_NEUTRION = ITEMS.register("raw_neutrion",
+            () -> new Item(new Item.Properties()));
 
+    public static final DeferredItem<Item> ANCIENT_ANKH = ITEMS.register("ancient_ankh",
+            () -> new AnkhItem(new Item.Properties().stacksTo(1)));
 
-
-
-
-
-        public static void register(IEventBus eventBus){
-            ITEMS.register(eventBus);
-        }
+    public static void register(IEventBus eventBus){
+        ITEMS.register(eventBus);
     }
+}
