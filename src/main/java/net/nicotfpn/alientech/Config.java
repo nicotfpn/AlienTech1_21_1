@@ -209,6 +209,20 @@ public class Config {
                         .comment("Damage dealt by Entropy Burst")
                         .defineInRange("abilityEntropyBurstDamage", 8.0, 1.0, 50.0);
 
+        // === Phase 9: Evolution Chamber ===
+
+        public static final ModConfigSpec.IntValue MAX_EVOLUTION_STAGE = SERVER_BUILDER
+                        .comment("Maximum evolution stage players can reach")
+                        .defineInRange("maxEvolutionStage", 5, 1, 10);
+
+        public static final ModConfigSpec.ConfigValue<int[]> EVOLUTION_CHAMBER_ENTROPY_COST = SERVER_BUILDER
+                        .comment("Entropy cost per evolution stage (index = stage)")
+                        .define("evolutionChamberEntropyCost", new int[] { 0, 5000, 20000, 80000, 250000, 1000000 });
+
+        public static final ModConfigSpec.ConfigValue<int[]> EVOLUTION_CHAMBER_TICKS_PER_STAGE = SERVER_BUILDER
+                        .comment("Processing ticks required per evolution stage (index = stage)")
+                        .define("evolutionChamberTicksPerStage", new int[] { 0, 200, 400, 600, 800, 1200 });
+
         public static final ModConfigSpec SERVER_SPEC = SERVER_BUILDER.build();
 
         static final ModConfigSpec SPEC = BUILDER.build();

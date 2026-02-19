@@ -49,8 +49,19 @@ public class EntropyShieldAbility extends BaseEvolutionAbility {
 
     @Override
     protected void applyEffect(ServerPlayer player) {
-        // Grant Resistance II for 10 seconds (200 ticks)
+        if (player == null || player.level() == null) {
+            return;
+        }
+
+        // Grant Resistance II for configured duration
         int duration = Config.ABILITY_ENTROPY_SHIELD_DURATION.get();
+        if (duration <= 0) {
+            return; // Invalid config
+        }
+
+        // Clamp duration to reasonable maximum (5 minutes)
+        duration = Math.min(duration, 6000);
+
         player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, duration, 1, false, true, true));
 
         // Visual feedback
