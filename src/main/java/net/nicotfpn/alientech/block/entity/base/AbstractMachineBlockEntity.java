@@ -111,17 +111,14 @@ public abstract class AbstractMachineBlockEntity extends AlienBlockEntity {
 
         // Inventory component: marks inventory dirty on change
         this.inventory = new MachineInventory(slotCount, () -> {
-            setChanged();
             markInventoryDirty();
         });
-        // Slot validator uses virtual dispatch — safe because it's only called at
-        // runtime, not in constructor
+        // Slot validator uses virtual dispatch
         inventory.setSlotValidator(this::isSlotValid);
 
-        // Energy component: marks energy dirty on change
+        // Energy component: no lambda needed, dirty sync flag handles changes
+        // mathematically
         this.energy = new MachineEnergy(energyCapacity, maxReceive, maxExtract, () -> {
-            setChanged();
-            markEnergyDirty();
         });
 
         // Processor component: marks block dirty on progress change
@@ -226,9 +223,38 @@ public abstract class AbstractMachineBlockEntity extends AlienBlockEntity {
             }
         }
 
+        // Deferred Dirty Sync Flag Protocol
+        int currentEnergy = energy.getEnergyStored();
+        int currentProgress = processor.getProgress();
+        int currentBurnTime = energy.getBurnTime();
+
+        EntropyStorage local = getEntropyStorage();
+        int currentEntropy = local != null ? local.getEntropy() : 0;
+
+        if (currentEnergy != lastStateEnergy || currentProgress != lastStateProgress ||
+                currentBurnTime != lastStateBurnTime || currentEntropy != lastStateEntropy) {
+
+            setChanged();
+
+            // If energy shifted drastically, flag for throttled network sync
+            if (currentEnergy != lastStateEnergy || currentEntropy != lastStateEntropy) {
+                markEnergyDirty();
+            }
+
+            lastStateEnergy = currentEnergy;
+            lastStateProgress = currentProgress;
+            lastStateBurnTime = currentBurnTime;
+            lastStateEntropy = currentEntropy;
+        }
+
         // Handle sync channels
         handleSync();
     }
+
+    private int lastStateEnergy = -1;
+    private int lastStateProgress = -1;
+    private int lastStateBurnTime = -1;
+    private int lastStateEntropy = -1;
 
     /**
      * Lazy initialize the MachineTicker.

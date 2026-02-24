@@ -1,7 +1,8 @@
 {
-  "parent": "minecraft:block/cube_all",
+  "parent": "minecraft:block/cube_bottom_top",
   "textures": {
-    "all": "alientech:block/alien_pyramid_casing"
+    "top": "alientech:block/pyramid_core_top",
+    "bottom": "alientech:block/pyramid_core_bottom",
+    "side": "alientech:block/pyramid_core_side"
   }
 }
-

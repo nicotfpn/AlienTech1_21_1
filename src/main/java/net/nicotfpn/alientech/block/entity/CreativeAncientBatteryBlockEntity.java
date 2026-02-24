@@ -41,6 +41,10 @@ public class CreativeAncientBatteryBlockEntity extends BlockEntity {
         }
     };
 
+    // NeoForge Native 1.20.4+ BlockCapabilityCache array for all 6 faces
+    @SuppressWarnings("unchecked")
+    private final net.neoforged.neoforge.capabilities.BlockCapabilityCache<IEnergyStorage, Direction>[] energyCaches = new net.neoforged.neoforge.capabilities.BlockCapabilityCache[6];
+
     public CreativeAncientBatteryBlockEntity(BlockPos pos, BlockState blockState) {
         super(ModBlockEntities.CREATIVE_ANCIENT_BATTERY_BE.get(), pos, blockState);
     }
@@ -49,12 +53,31 @@ public class CreativeAncientBatteryBlockEntity extends BlockEntity {
         if (level == null || level.isClientSide)
             return;
 
-        // Push energy to all 6 sides
+        // Extreme Optimization: Only push every 10 ticks, staggered mathematically by
+        // chunk pos to avoid server-wide spikes
+        if ((level.getGameTime() + worldPosition.asLong()) % 10 != 0)
+            return;
+
+        // Push massive energy to all 6 sides
         for (Direction dir : Direction.values()) {
-            IEnergyStorage target = level.getCapability(Capabilities.EnergyStorage.BLOCK, worldPosition.relative(dir),
-                    dir.getOpposite());
+            int i = dir.ordinal();
+
+            // Cache resolution
+            if (energyCaches[i] == null) {
+                if (level instanceof net.minecraft.server.level.ServerLevel serverLvl) {
+                    energyCaches[i] = net.neoforged.neoforge.capabilities.BlockCapabilityCache.create(
+                            Capabilities.EnergyStorage.BLOCK, serverLvl, worldPosition.relative(dir),
+                            dir.getOpposite());
+                } else {
+                    continue;
+                }
+            }
+
+            IEnergyStorage target = energyCaches[i].getCapability();
             if (target != null && target.canReceive()) {
-                target.receiveEnergy(100_000, false); // Pushing 100k FE per tick per side
+                // Push 1,000,000 FE per stagger (equivalent to pushing 100k per tick)
+                // The receiver will swallow what it can hold.
+                target.receiveEnergy(1_000_000, false);
             }
         }
     }

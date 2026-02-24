@@ -77,7 +77,15 @@ public class MachineTicker {
 
         // Execute processor.tick() integerTicks times (may be zero).
         int successfulTicks = 0;
+        int energyCost = process.getEnergyCost();
+
         for (int i = 0; i < integerTicks; i++) {
+            // Fast-fail loop optimization: instantly break if we can't process anymore
+            // Prevents executing redundant loop logic for empty machines
+            if (!process.canProcess() && !energy.hasPower(energyCost)) {
+                break;
+            }
+
             if (processor.tick(process, energy)) {
                 successfulTicks++;
             }

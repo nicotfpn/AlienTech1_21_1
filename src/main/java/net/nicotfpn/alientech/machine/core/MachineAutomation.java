@@ -21,8 +21,10 @@ import java.util.Map;
 public class MachineAutomation {
 
     private static final int AUTO_PUSH_INTERVAL = 10;
-    private int autoPushTimer = 0;
     private final Map<Direction, IItemHandler> sidedCache = new EnumMap<>(Direction.class);
+    // NeoForge 1.21.1 Native Capability Caching Array Map
+    private final Map<Direction, net.neoforged.neoforge.capabilities.BlockCapabilityCache<IItemHandler, @Nullable Direction>> autoPushCache = new EnumMap<>(
+            Direction.class);
 
     // ==================== Sided Handler Access ====================
 
@@ -46,13 +48,14 @@ public class MachineAutomation {
      */
     public void invalidateCache() {
         sidedCache.clear();
+        autoPushCache.clear();
     }
 
     // ==================== Auto-Push Outputs ====================
 
     /**
      * Periodically push items from output slots to adjacent inventories.
-     * Runs every AUTO_PUSH_INTERVAL ticks (0.5 seconds).
+     * Runs on a distributed offset interval using worldPosition memory.
      *
      * @param level       the server level
      * @param pos         the machine's block position
@@ -62,15 +65,16 @@ public class MachineAutomation {
      */
     public void autoPushOutputs(Level level, BlockPos pos, MachineInventory inventory,
             int[] outputSlots, SlotAccessRules rules) {
-        autoPushTimer++;
-        if (autoPushTimer < AUTO_PUSH_INTERVAL)
-            return;
-        autoPushTimer = 0;
 
-        if (outputSlots == null || outputSlots.length == 0)
+        if (level.isClientSide() || outputSlots == null || outputSlots.length == 0)
             return;
 
-        for (int outputSlot : outputSlots) {
+        // Distribute load across exact ticks mathematically derived from block memory
+        if ((level.getGameTime() + pos.asLong()) % AUTO_PUSH_INTERVAL != 0)
+            return;
+
+        for (int i = 0; i < outputSlots.length; i++) {
+            int outputSlot = outputSlots[i];
             ItemStack outputStack = inventory.getHandler().getStackInSlot(outputSlot);
             if (outputStack.isEmpty())
                 continue;
@@ -79,12 +83,22 @@ public class MachineAutomation {
                 if (!rules.canExtract(outputSlot, direction))
                     continue;
 
-                BlockPos adjacentPos = pos.relative(direction);
-                if (!level.isLoaded(adjacentPos))
-                    continue;
+                // Implement High-Speed Native BlockCapabilityCache (1.20.4+ spec) instead of
+                // deprecated LazyOptionals
+                net.neoforged.neoforge.capabilities.BlockCapabilityCache<IItemHandler, @Nullable Direction> cache = autoPushCache
+                        .get(direction);
+                if (cache == null) {
+                    if (level instanceof net.minecraft.server.level.ServerLevel serverLvl) {
+                        cache = net.neoforged.neoforge.capabilities.BlockCapabilityCache.create(
+                                Capabilities.ItemHandler.BLOCK, serverLvl, pos.relative(direction),
+                                direction.getOpposite());
+                        autoPushCache.put(direction, cache);
+                    } else {
+                        continue;
+                    }
+                }
 
-                IItemHandler adjacentHandler = level.getCapability(
-                        Capabilities.ItemHandler.BLOCK, adjacentPos, direction.getOpposite());
+                IItemHandler adjacentHandler = cache.getCapability();
                 if (adjacentHandler == null)
                     continue;
 
