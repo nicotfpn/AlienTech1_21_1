@@ -3,8 +3,8 @@ package net.nicotfpn.alientech.evolution.ability;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.nicotfpn.alientech.evolution.PlayerEvolutionData;
-import net.nicotfpn.alientech.evolution.PlayerEvolutionHelper;
 import net.nicotfpn.alientech.util.CapabilityUtils;
+import net.nicotfpn.alientech.AlienTech;
 
 import java.util.Map;
 import java.util.UUID;
@@ -14,7 +14,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * Base implementation of {@link IEvolutionAbility} with common functionality.
  * <p>
  * Handles cooldown tracking, entropy consumption, and prerequisite checks.
- * Subclasses should override {@link #applyEffect(ServerPlayer)} to implement ability-specific logic.
+ * Subclasses should override {@link #applyEffect(ServerPlayer)} to implement
+ * ability-specific logic.
  * <p>
  * Thread-safe cooldown tracking with automatic cleanup to prevent memory leaks.
  */
@@ -23,8 +24,9 @@ public abstract class BaseEvolutionAbility implements IEvolutionAbility {
     // Thread-safe map for multiplayer safety
     // UUID -> last activation game time
     private static final Map<UUID, Long> COOLDOWN_MAP = new ConcurrentHashMap<>();
-    
-    // Cleanup threshold: remove entries older than 1 hour of game time (72000 ticks)
+
+    // Cleanup threshold: remove entries older than 1 hour of game time (72000
+    // ticks)
     private static final long COOLDOWN_CLEANUP_THRESHOLD = 72000L;
 
     @Override
@@ -108,13 +110,12 @@ public abstract class BaseEvolutionAbility implements IEvolutionAbility {
         if (getCooldownTicks() > 0) {
             long currentTime = player.level().getGameTime();
             COOLDOWN_MAP.put(player.getUUID(), currentTime);
-            
+
             // Periodic cleanup to prevent memory leaks
             cleanupOldCooldowns(currentTime);
         }
 
-        AlienTechDebug.ABILITY.log("Ability '{}' activated by player {} (cost: {})", 
-                getId(), player.getName().getString(), cost);
+        // ability activated by player (logged in debug builds)
 
         // Apply ability effect (after entropy consumed and cooldown set)
         try {

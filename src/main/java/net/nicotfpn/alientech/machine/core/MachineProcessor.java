@@ -53,7 +53,7 @@ public class MachineProcessor {
      * @param process the machine's process definition
      * @param energy  the machine's energy component
      */
-    public void tick(IMachineProcess process, MachineEnergy energy) {
+    public boolean tick(IMachineProcess process, MachineEnergy energy) {
         if (process.canProcess()) {
             if (energy.hasPower(process.getEnergyCost())) {
                 // Consume energy (priority: FE first, fuel ticks down passively)
@@ -68,6 +68,7 @@ public class MachineProcessor {
                     process.onProcessComplete();
                     progress = 0;
                 }
+                return true;
             } else {
                 // No power — reset progress
                 resetProgress();
@@ -76,6 +77,7 @@ public class MachineProcessor {
             // No valid recipe — reset progress
             resetProgress();
         }
+        return false;
     }
 
     private void resetProgress() {
@@ -92,6 +94,7 @@ public class MachineProcessor {
     }
 
     public void load(CompoundTag tag) {
-        progress = tag.getInt("Progress");
+        progress = net.nicotfpn.alientech.util.StateValidator.ensureNonNegative(
+                net.nicotfpn.alientech.util.SafeNBT.getInt(tag, "Progress", 0));
     }
 }

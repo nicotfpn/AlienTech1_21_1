@@ -1,0 +1,15 @@
+{
+    "name": "Ancient Battery",
+    "icon": "alientech:ancient_battery",
+    "category": "alientech:machines",
+    "pages": [
+        {
+            "type": "patchouli:text",
+            "text": "A colossal energy repository. The $(item)Ancient Battery$() can store millions of FE. $(br2)It interfaces with adjacent cables and machines seamlessly, featuring an internal GUI to both inject and extract charge manually from items."
+        },
+        {
+            "type": "patchouli:crafting",
+            "recipe": "alientech:ancient_battery"
+        }
+    ]
+}

@@ -1,0 +1,15 @@
+{
+    "name": "Quantum Vacuum Turbine",
+    "icon": "alientech:quantum_vacuum_turbine",
+    "category": "alientech:machines",
+    "pages": [
+        {
+            "type": "patchouli:text",
+            "text": "By tearing microscopic holes into the quantum sub-realm, this turbine harvests $(energy)zero-point energy$(). Running solo, it is slow and inefficient. But when bathed in the resonant fields of an active $(item)Pyramid Core$(), it generates staggering voltage."
+        },
+        {
+            "type": "patchouli:crafting",
+            "recipe": "alientech:quantum_vacuum_turbine"
+        }
+    ]
+}

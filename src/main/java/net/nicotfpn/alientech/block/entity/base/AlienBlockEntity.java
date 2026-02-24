@@ -30,9 +30,22 @@ public abstract class AlienBlockEntity extends BlockEntity implements MenuProvid
     }
 
     public static void tickClient(Level level, BlockPos pos, BlockState state, AlienBlockEntity tile) {
+        // Validate inputs (mirror tickServer safety)
+        if (level == null || pos == null || state == null || tile == null) {
+            return;
+        }
+        if (!level.isClientSide) {
+            return;
+        }
+
         tile.isRemote = true;
         tile.onUpdateClient();
-        tile.ticker++;
+        // Prevent ticker overflow (resets after ~3.4 years of continuous ticking)
+        if (tile.ticker >= Integer.MAX_VALUE - 1) {
+            tile.ticker = 0;
+        } else {
+            tile.ticker++;
+        }
     }
 
     public static void tickServer(Level level, BlockPos pos, BlockState state, AlienBlockEntity tile) {
@@ -48,7 +61,12 @@ public abstract class AlienBlockEntity extends BlockEntity implements MenuProvid
 
         tile.isRemote = false;
         tile.onUpdateServer();
-        tile.ticker++;
+        // Prevent ticker overflow (resets after ~3.4 years of continuous ticking)
+        if (tile.ticker >= Integer.MAX_VALUE - 1) {
+            tile.ticker = 0;
+        } else {
+            tile.ticker++;
+        }
     }
 
     protected void onUpdateClient() {
@@ -91,6 +109,16 @@ public abstract class AlienBlockEntity extends BlockEntity implements MenuProvid
         super.setRemoved();
         // Clear any cached references
         // Override in subclasses if needed
+    }
+    
+    /**
+     * Convenience helper to request a full block update / sync to clients.
+     * Some subclasses call this when multiple synced channels change.
+     */
+    protected void markForSync() {
+        if (level != null) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        }
     }
 
     @Nullable

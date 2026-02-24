@@ -238,6 +238,62 @@ public final class EntityStorageUtil {
         return type.getDescription().getString();
     }
 
+    // ==================== Entity Reconstruction ====================
+
+    /**
+     * Reconstruct a LivingEntity from raw mob NBT data (for display purposes only).
+     * Used by the Decay Chamber to show a mob silhouette in the GUI.
+     *
+     * @param level   the level to use for entity creation (can be client-side)
+     * @param mobData raw CompoundTag containing StoredEntityType and StoredNBT keys
+     * @return reconstructed LivingEntity, or null if reconstruction fails
+     */
+    @Nullable
+    public static LivingEntity reconstructEntity(@Nullable Level level, @Nullable CompoundTag mobData) {
+        if (level == null || mobData == null)
+            return null;
+
+        try {
+            String typeIdStr = mobData.contains(KEY_ENTITY_TYPE)
+                    ? mobData.getString(KEY_ENTITY_TYPE)
+                    : null;
+            if (typeIdStr == null || typeIdStr.isEmpty())
+                return null;
+
+            ResourceLocation typeId = ResourceLocation.tryParse(typeIdStr);
+            if (typeId == null)
+                return null;
+
+            Optional<EntityType<?>> entityTypeOpt = BuiltInRegistries.ENTITY_TYPE.getOptional(typeId);
+            if (entityTypeOpt.isEmpty())
+                return null;
+
+            Entity entity = entityTypeOpt.get().create(level);
+            if (entity == null)
+                return null;
+
+            // Load NBT safely — this is for display only, failures are non-critical
+            if (mobData.contains(KEY_NBT)) {
+                try {
+                    entity.load(mobData.getCompound(KEY_NBT));
+                } catch (Exception ignored) {
+                    // NBT load failure for display entity is non-critical
+                }
+            }
+
+            if (entity instanceof LivingEntity living) {
+                return living;
+            } else {
+                entity.discard();
+                return null;
+            }
+        } catch (Exception e) {
+            net.nicotfpn.alientech.AlienTech.LOGGER.debug("Failed to reconstruct entity for display: {}",
+                    e.getMessage());
+            return null;
+        }
+    }
+
     // ==================== Mutation ====================
 
     /**

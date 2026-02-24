@@ -138,9 +138,16 @@ public class MachineEnergy {
 
     public void load(CompoundTag tag) {
         if (tag.contains("Energy")) {
-            storage.setEnergy(tag.getInt("Energy"));
+            int energy = net.nicotfpn.alientech.util.SafeNBT.getInt(tag, "Energy", 0);
+            storage.setEnergy(net.nicotfpn.alientech.util.StateValidator.ensureNonNegative(energy));
         }
-        burnTime = tag.getInt("BurnTime");
-        maxBurnTime = tag.getInt("MaxBurnTime");
+        maxBurnTime = net.nicotfpn.alientech.util.StateValidator.ensureNonNegative(
+                net.nicotfpn.alientech.util.SafeNBT.getInt(tag, "MaxBurnTime", 0));
+        burnTime = net.nicotfpn.alientech.util.StateValidator.ensureNonNegative(
+                net.nicotfpn.alientech.util.SafeNBT.getInt(tag, "BurnTime", 0));
+        // Clamp burn time to max
+        if (maxBurnTime > 0 && burnTime > maxBurnTime) {
+            burnTime = maxBurnTime;
+        }
     }
 }

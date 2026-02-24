@@ -13,7 +13,7 @@ public class AncientChargerScreen extends AbstractContainerScreen<AncientCharger
 
     // Reuse specific texture or generic background
     private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(AlienTech.MOD_ID,
-            "textures/gui/ancient_battery.png");
+            "textures/gui/ancient_battery_gui.png");
 
     public AncientChargerScreen(AncientChargerMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
@@ -34,14 +34,15 @@ public class AncientChargerScreen extends AbstractContainerScreen<AncientCharger
         int x = (width - imageWidth) / 2;
         int y = (height - imageHeight) / 2;
 
-        guiGraphics.blit(TEXTURE, x, y, 0, 0, imageWidth, imageHeight);
+        guiGraphics.blit(TEXTURE, x, y, 0, 0, imageWidth, imageHeight, 256, 256);
 
         renderEnergy(guiGraphics, x, y);
     }
 
     private void renderEnergy(GuiGraphics guiGraphics, int x, int y) {
         int scaledHeight = menu.getScaledEnergy(52);
-        guiGraphics.blit(TEXTURE, x + 8, y + 20 + 52 - scaledHeight, 176, 52 - scaledHeight, 16, scaledHeight);
+        guiGraphics.blit(TEXTURE, x + 8, y + 20 + 52 - scaledHeight, 176, 52 - scaledHeight, 16, scaledHeight, 256,
+                256);
     }
 
     @Override

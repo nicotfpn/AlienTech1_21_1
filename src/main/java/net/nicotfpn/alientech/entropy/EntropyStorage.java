@@ -1,7 +1,6 @@
 package net.nicotfpn.alientech.entropy;
 
 import net.minecraft.nbt.CompoundTag;
-import net.nicotfpn.alientech.util.StateValidator;
 import net.nicotfpn.alientech.util.AlienTechDebug;
 
 /**
@@ -113,8 +112,8 @@ public class EntropyStorage implements IEntropyHandler {
             // Validate state after mutation
             validateState();
             onChanged.run();
-            
-            AlienTechDebug.ENTROPY.log("Inserted {} entropy (total: {}/{})", toInsert, entropy, capacity);
+
+            // inserted entropy (debug logging removed)
         }
         return toInsert;
     }
@@ -148,7 +147,7 @@ public class EntropyStorage implements IEntropyHandler {
             // Validate state after mutation
             validateState();
             onChanged.run();
-            
+
             AlienTechDebug.ENTROPY.log("Extracted {} entropy (remaining: {}/{})", toExtract, entropy, capacity);
         }
         return toExtract;
@@ -229,5 +228,19 @@ public class EntropyStorage implements IEntropyHandler {
      */
     public boolean isEmpty() {
         return entropy <= 0;
+    }
+
+    /**
+     * Internal state validation method.
+     * Ensures entropy is clamped to [0, capacity].
+     * Called after every mutation to guarantee invariants.
+     */
+    public void validateState() {
+        if (entropy < 0) {
+            entropy = 0;
+        }
+        if (entropy > capacity) {
+            entropy = capacity;
+        }
     }
 }

@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "SDS",
+    "GPG",
+    "SQS"
+  ],
+  "key": {
+    "S": { "item": "alientech:inertial_stability_alloy" },
+    "D": { "item": "minecraft:diamond_block" },
+    "G": { "item": "alientech:graviton_contained" },
+    "P": { "item": "alientech:pyramid_core" },
+    "Q": { "item": "minecraft:netherite_ingot" }
+  },
+  "result": {
+    "id": "alientech:evolution_chamber",
+    "count": 1
+  }
+}
+

@@ -1,0 +1,44 @@
+{
+    "name": "Decay Chamber",
+    "icon": "alientech:decay_chamber_controller",
+    "category": "alientech:machines",
+    "pages": [
+        {
+            "type": "patchouli:text",
+            "text": "A horrifying machinery constructed to forcefully rip life force from living beings and convert it into pure $(alien)Entropy Biomass$(). It requires a multi-block chamber led by a $(item)Controller$()."
+        },
+        {
+            "type": "patchouli:crafting",
+            "recipe": "alientech:decay_chamber_controller",
+            "text": "The Controller manages insertions and outputs."
+        },
+        {
+            "type": "patchouli:crafting",
+            "recipe": "alientech:decay_chamber",
+            "text": "These form the walls of the terrifying prison."
+        },
+        {
+            "type": "patchouli:multiblock",
+            "name": "Decay Chamber Setup",
+            "multiblock": {
+                "pattern": [
+                    [
+                        " C ",
+                        "   ",
+                        "   "
+                    ],
+                    [
+                        " C ",
+                        " 0 ",
+                        "   "
+                    ]
+                ],
+                "mapping": {
+                    "0": "alientech:decay_chamber_controller",
+                    "C": "alientech:decay_chamber"
+                }
+            },
+            "text": "To function, the Controller requires at least one 2-block high pillar of $(item)Decay Chambers$() positioned directly horizontally adjacent to it."
+        }
+    ]
+}

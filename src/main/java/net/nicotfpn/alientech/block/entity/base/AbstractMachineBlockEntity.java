@@ -14,6 +14,9 @@ import net.nicotfpn.alientech.machine.core.MachineInventory;
 import net.nicotfpn.alientech.machine.core.MachineProcessor;
 import net.nicotfpn.alientech.machine.core.MachineTicker;
 import net.nicotfpn.alientech.machine.core.SlotAccessRules;
+import net.nicotfpn.alientech.pyramid.PyramidNetwork;
+import net.nicotfpn.alientech.pyramid.PyramidTier;
+import net.nicotfpn.alientech.entropy.EntropyStorage;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Predicate;
@@ -56,7 +59,7 @@ public abstract class AbstractMachineBlockEntity extends AlienBlockEntity {
     private int energySyncCooldown = 0;
     private static final int ENERGY_SYNC_INTERVAL = 10;
 
-    // ==================== Container Data (6 values synced to client)
+    // ==================== Container Data (extended values synced to client)
     // ====================
     protected final ContainerData data = new ContainerData() {
         @Override
@@ -66,8 +69,19 @@ public abstract class AbstractMachineBlockEntity extends AlienBlockEntity {
                 case 1 -> getProcess().getProcessTime();
                 case 2 -> energy.getBurnTime();
                 case 3 -> energy.getMaxBurnTime();
-                case 4 -> energy.getEnergyStored();
-                case 5 -> energy.getCapacity();
+                case 4 -> net.nicotfpn.alientech.util.EnergyUtils.lowBits(energy.getEnergyStored());
+                case 5 -> net.nicotfpn.alientech.util.EnergyUtils.highBits(energy.getEnergyStored());
+                case 6 -> net.nicotfpn.alientech.util.EnergyUtils.lowBits(energy.getCapacity());
+                case 7 -> net.nicotfpn.alientech.util.EnergyUtils.highBits(energy.getCapacity());
+                // Entropy fields appended for backward compatibility
+                case 8 -> net.nicotfpn.alientech.util.EnergyUtils
+                        .lowBits(getEntropyStorage() != null ? getEntropyStorage().getEntropy() : 0);
+                case 9 -> net.nicotfpn.alientech.util.EnergyUtils
+                        .highBits(getEntropyStorage() != null ? getEntropyStorage().getEntropy() : 0);
+                case 10 -> net.nicotfpn.alientech.util.EnergyUtils
+                        .lowBits(getEntropyStorage() != null ? getEntropyStorage().getMaxEntropy() : 0);
+                case 11 -> net.nicotfpn.alientech.util.EnergyUtils
+                        .highBits(getEntropyStorage() != null ? getEntropyStorage().getMaxEntropy() : 0);
                 default -> 0;
             };
         }
@@ -79,13 +93,13 @@ public abstract class AbstractMachineBlockEntity extends AlienBlockEntity {
                 // case 1: maxProgress is derived from getProcessTime(), not settable
                 case 2 -> energy.setBurnTime(value);
                 case 3 -> energy.setMaxBurnTime(value);
-                // case 4, 5: energy is managed by MachineEnergy
+                // case 4-7: energy is managed by MachineEnergy
             }
         }
 
         @Override
         public int getCount() {
-            return 6;
+            return 12;
         }
     };
 
@@ -179,9 +193,38 @@ public abstract class AbstractMachineBlockEntity extends AlienBlockEntity {
 
         super.onUpdateServer();
 
-        // Delegate all tick logic to MachineTicker
-        getOrCreateTicker().tickServer(inventory, energy, processor, automation,
-                getProcess(), level, worldPosition);
+        // Pull entropy from PyramidNetwork into local buffer (if present).
+        try {
+            net.nicotfpn.alientech.entropy.EntropyStorage local = getEntropyStorage();
+            if (local != null && level != null) {
+                int capacityLeft = local.getMaxEntropy() - local.getEntropy();
+                if (capacityLeft > 0) {
+                    int maxTransfer = net.nicotfpn.alientech.Config.ENTROPY_CABLE_TRANSFER_RATE.get();
+                    int toPull = Math.min(capacityLeft, maxTransfer);
+                    int extracted = net.nicotfpn.alientech.pyramid.PyramidNetwork.get(level).extractEntropy(toPull,
+                            false);
+                    if (extracted > 0) {
+                        local.insertEntropy(extracted, false);
+                        setChanged();
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+        }
+
+        // Delegate all tick logic to MachineTicker with speed multiplier.
+        float multiplier = getSpeedMultiplier();
+        int ticksProcessed = getOrCreateTicker().tickServer(inventory, energy, processor, automation,
+                getProcess(), level, worldPosition, multiplier);
+
+        // Deduct proportional Entropy mathematically linked to true processor
+        // iterations
+        if (ticksProcessed > 0 && getEntropyPerTick() > 0) {
+            EntropyStorage storage = getEntropyStorage();
+            if (storage != null) {
+                storage.extractEntropy(getEntropyPerTick() * ticksProcessed, false);
+            }
+        }
 
         // Handle sync channels
         handleSync();
@@ -267,5 +310,64 @@ public abstract class AbstractMachineBlockEntity extends AlienBlockEntity {
         if (level != null) {
             inventory.dropAll(level, worldPosition);
         }
+    }
+
+    // ==================== Entropy / Speed Multiplier Hook ====================
+
+    /**
+     * Optional hook for subclasses to expose their local entropy buffer.
+     * Default implementation returns null (machine has no entropy buffer).
+     */
+    protected EntropyStorage getEntropyStorage() {
+        return null;
+    }
+
+    /**
+     * Entropy cost per tick for the active process. Subclasses should override
+     * if they consume entropy per tick.
+     */
+    protected int getEntropyPerTick() {
+        return 0;
+    }
+
+    /**
+     * FE cost per tick for the active process. Subclasses should override if
+     * they consume FE per tick.
+     */
+    protected int getFEPerTick() {
+        return 0;
+    }
+
+    /**
+     * Compute the current speed multiplier based on Pyramid tier and available
+     * resources (local entropy buffer + FE storage). This method follows the
+     * architecture rules and must not modify processor logic directly.
+     */
+    public float getSpeedMultiplier() {
+        if (level == null)
+            return 0f;
+
+        PyramidTier tier = PyramidNetwork.get(level).getTier();
+
+        EntropyStorage entropy = getEntropyStorage();
+        boolean hasEntropy = entropy != null && entropy.getEntropy() >= getEntropyPerTick();
+        boolean hasFE = energy.getEnergyStored() >= getFEPerTick();
+
+        if (tier == PyramidTier.TIER_1) {
+            return hasEntropy ? 1.0f : 0f;
+        } else if (tier == PyramidTier.TIER_2) {
+            if (hasEntropy && hasFE)
+                return 2.0f;
+            if (hasEntropy || hasFE)
+                return 1.0f;
+            return 0f;
+        } else if (tier == PyramidTier.TIER_3) {
+            if (hasEntropy && hasFE)
+                return 3.0f;
+            if (hasEntropy || hasFE)
+                return 1.5f;
+            return 0f;
+        }
+        return 0f;
     }
 }

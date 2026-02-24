@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "SQS",
+    "GTG",
+    "SCS"
+  ],
+  "key": {
+    "S": { "item": "alientech:inertial_stability_alloy" },
+    "Q": { "item": "alientech:graviton_contained" },
+    "G": { "item": "alientech:graviton" },
+    "T": { "item": "minecraft:blast_furnace" },
+    "C": { "item": "minecraft:observer" }
+  },
+  "result": {
+    "id": "alientech:quantum_vacuum_turbine",
+    "count": 1
+  }
+}
+

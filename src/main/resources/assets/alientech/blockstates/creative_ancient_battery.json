@@ -1,0 +1,19 @@
+{
+    "variants": {
+        "facing=north": {
+            "model": "alientech:block/ancient_battery"
+        },
+        "facing=south": {
+            "model": "alientech:block/ancient_battery",
+            "y": 180
+        },
+        "facing=west": {
+            "model": "alientech:block/ancient_battery",
+            "y": 270
+        },
+        "facing=east": {
+            "model": "alientech:block/ancient_battery",
+            "y": 90
+        }
+    }
+}

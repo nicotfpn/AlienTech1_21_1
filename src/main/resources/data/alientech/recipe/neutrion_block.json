@@ -1,18 +1,18 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "category": "misc",
-  "key": {
-    "N": {
-      "item": "alientech:neutrion_ingot"
+    "type": "minecraft:crafting_shaped",
+    "category": "building",
+    "pattern": [
+        "NNN",
+        "NNN",
+        "NNN"
+    ],
+    "key": {
+        "N": {
+            "item": "alientech:neutrion_ingot"
+        }
+    },
+    "result": {
+        "id": "alientech:neutrion_block",
+        "count": 1
     }
-  },
-  "pattern": [
-    "NNN",
-    "NNN",
-    "NNN"
-  ],
-  "result": {
-    "count": 1,
-    "id": "alientech:neutrion_block"
-  }
 }

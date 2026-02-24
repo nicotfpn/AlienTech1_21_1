@@ -9,7 +9,6 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.settings.KeyConflictContext;
-import net.neoforged.neoforge.event.TickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.nicotfpn.alientech.AlienTech;
 import net.nicotfpn.alientech.evolution.PlayerEvolutionHelper;
@@ -24,13 +23,14 @@ import java.util.List;
 /**
  * Handles client-side keybinds for evolution abilities.
  * <p>
- * Registers keybinds and sends activation packets to the server when keys are pressed.
+ * Registers keybinds and sends activation packets to the server when keys are
+ * pressed.
  */
 @EventBusSubscriber(modid = AlienTech.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public class AbilityKeyHandler {
 
     private static final List<KeyMapping> KEYBINDS = new ArrayList<>();
-    
+
     // Ability keybinds - one per ability slot
     public static final KeyMapping ABILITY_1 = createKeybind("ability_1", GLFW.GLFW_KEY_V, "key.categories.alientech");
     public static final KeyMapping ABILITY_2 = createKeybind("ability_2", GLFW.GLFW_KEY_B, "key.categories.alientech");
@@ -43,8 +43,7 @@ public class AbilityKeyHandler {
                 KeyConflictContext.IN_GAME,
                 InputConstants.Type.KEYSYM,
                 keyCode,
-                category
-        );
+                category);
         KEYBINDS.add(keybind);
         return keybind;
     }
@@ -57,17 +56,14 @@ public class AbilityKeyHandler {
     // Register for client tick events to check key presses
     @EventBusSubscriber(modid = AlienTech.MOD_ID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
     public static class ClientTickHandler {
-        
+
         private static int ability1Cooldown = 0;
         private static int ability2Cooldown = 0;
         private static int ability3Cooldown = 0;
         private static int ability4Cooldown = 0;
 
         @SubscribeEvent
-        public static void onClientTick(TickEvent.ClientTickEvent event) {
-            if (event.phase != TickEvent.Phase.END) {
-                return;
-            }
+        public static void onClientTick(net.neoforged.neoforge.client.event.ClientTickEvent.Post event) {
 
             Minecraft mc = Minecraft.getInstance();
             if (mc.player == null || mc.level == null) {
@@ -75,10 +71,14 @@ public class AbilityKeyHandler {
             }
 
             // Decrement cooldowns
-            if (ability1Cooldown > 0) ability1Cooldown--;
-            if (ability2Cooldown > 0) ability2Cooldown--;
-            if (ability3Cooldown > 0) ability3Cooldown--;
-            if (ability4Cooldown > 0) ability4Cooldown--;
+            if (ability1Cooldown > 0)
+                ability1Cooldown--;
+            if (ability2Cooldown > 0)
+                ability2Cooldown--;
+            if (ability3Cooldown > 0)
+                ability3Cooldown--;
+            if (ability4Cooldown > 0)
+                ability4Cooldown--;
 
             // Check for key presses
             if (ABILITY_1.consumeClick() && ability1Cooldown == 0) {
@@ -112,7 +112,7 @@ public class AbilityKeyHandler {
             if (slot < available.size()) {
                 IEvolutionAbility ability = available.get(slot);
                 ResourceLocation abilityId = ResourceLocation.fromNamespaceAndPath(AlienTech.MOD_ID, ability.getId());
-                
+
                 // Send packet to server
                 AbilityActivationPacket packet = new AbilityActivationPacket(abilityId);
                 PacketDistributor.sendToServer(packet);

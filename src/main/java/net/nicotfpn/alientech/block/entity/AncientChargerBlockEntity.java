@@ -16,7 +16,6 @@ import net.nicotfpn.alientech.block.entity.base.AlienElectricBlockEntity;
 import net.nicotfpn.alientech.client.IHudProvider;
 import net.nicotfpn.alientech.util.EnergyUtils;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,6 +44,30 @@ public class AncientChargerBlockEntity extends AlienElectricBlockEntity implemen
         }
     };
 
+    // ContainerData for sync (Energy split into 16-bit chunks)
+    protected final net.minecraft.world.inventory.ContainerData data = new net.minecraft.world.inventory.ContainerData() {
+        @Override
+        public int get(int index) {
+            return switch (index) {
+                // Indices 4-7 to match AbstractMachineBlockEntity convention (consistency)
+                case 4 -> net.nicotfpn.alientech.util.EnergyUtils.lowBits(energyStorage.getEnergyStored());
+                case 5 -> net.nicotfpn.alientech.util.EnergyUtils.highBits(energyStorage.getEnergyStored());
+                case 6 -> net.nicotfpn.alientech.util.EnergyUtils.lowBits(energyStorage.getMaxEnergyStored());
+                case 7 -> net.nicotfpn.alientech.util.EnergyUtils.highBits(energyStorage.getMaxEnergyStored());
+                default -> 0;
+            };
+        }
+
+        @Override
+        public void set(int index, int value) {
+        }
+
+        @Override
+        public int getCount() {
+            return 8;
+        }
+    };
+
     public AncientChargerBlockEntity(BlockPos pos, BlockState blockState) {
         super(ModBlockEntities.ANCIENT_CHARGER_BE.get(), pos, blockState,
                 Config.CHARGER_CAPACITY.get(), MAX_TRANSFER);
@@ -55,33 +78,12 @@ public class AncientChargerBlockEntity extends AlienElectricBlockEntity implemen
         return Component.translatable("block.alientech.ancient_charger");
     }
 
-    @Nullable
     @Override
     public net.minecraft.world.inventory.AbstractContainerMenu createMenu(int containerId,
             net.minecraft.world.entity.player.Inventory playerInventory,
             net.minecraft.world.entity.player.Player player) {
-        net.minecraft.world.inventory.ContainerData data = new net.minecraft.world.inventory.ContainerData() {
-            @Override
-            public int get(int index) {
-                return switch (index) {
-                    case 0 -> energyStorage.getEnergyStored() & 0xFFFF;
-                    case 1 -> (energyStorage.getEnergyStored() >> 16) & 0xFFFF;
-                    case 2 -> energyStorage.getMaxEnergyStored() & 0xFFFF;
-                    case 3 -> (energyStorage.getMaxEnergyStored() >> 16) & 0xFFFF;
-                    default -> 0;
-                };
-            }
-
-            @Override
-            public void set(int index, int value) {
-            }
-
-            @Override
-            public int getCount() {
-                return 4;
-            }
-        };
-        return new net.nicotfpn.alientech.screen.AncientChargerMenu(containerId, playerInventory, this, data);
+        // Use the local ContainerData which now handles 16-bit split
+        return new net.nicotfpn.alientech.screen.AncientChargerMenu(containerId, playerInventory, this, this.data);
     }
 
     public ItemStackHandler getItemHandler() {

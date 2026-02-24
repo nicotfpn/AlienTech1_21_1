@@ -45,14 +45,25 @@ public class SyncableEnergyStorage extends EnergyStorage {
 
     /**
      * Sets the energy directly. Useful for NBT loading and Packet syncing.
+     * Clamps to [0, capacity]. Does NOT trigger the onChanged callback
+     * to avoid sync loops during load/deserialization.
      * 
      * @param energy The new energy value.
      */
     public void setEnergy(int energy) {
         this.energy = Math.max(0, Math.min(energy, capacity));
-        // We generally don't trigger the callback here during load/sync to avoid sync
-        // loops
-        // unless explicitly needed.
+    }
+
+    /**
+     * Sets the energy directly, bypassing receiveEnergy/extractEnergy limits.
+     * Use this for generators (maxReceive=0) that need to restore stored energy
+     * from NBT without being blocked by transfer rate limits.
+     * Clamps to [0, capacity]. Does NOT trigger the onChanged callback.
+     *
+     * @param energy The energy value to set.
+     */
+    public void setEnergyDirectly(int energy) {
+        this.energy = Math.max(0, Math.min(energy, capacity));
     }
 
     // Helper to expose capacity publicly if needed

@@ -1,0 +1,11 @@
+{
+    "name": "Creative Ancient Battery",
+    "icon": "alientech:creative_ancient_battery",
+    "category": "alientech:machines",
+    "pages": [
+        {
+            "type": "patchouli:text",
+            "text": "A mythical variant of the Ancient Battery that taps straight into the universe's fabric, providing $(energy)limitless power$() to all connected structures. $(br2)It cannot be obtained by mortals."
+        }
+    ]
+}

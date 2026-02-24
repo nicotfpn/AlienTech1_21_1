@@ -125,7 +125,7 @@ public class ModBlocks {
                                         BlockBehaviour.Properties.of()
                                                         .mapColor(MapColor.COLOR_PURPLE)
                                                         .strength(3.0f)
-                                                        .sound(SoundType.AMETHYST_BLOCK)
+                                                        .sound(SoundType.AMETHYST)
                                                         .lightLevel(state -> 5)
                                                         .requiresCorrectToolForDrops()
                                                         .noOcclusion()));

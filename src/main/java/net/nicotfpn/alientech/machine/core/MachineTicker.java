@@ -44,13 +44,16 @@ public class MachineTicker {
         this.rules = rules;
     }
 
+    // Fractional ticks accumulator to support non-integer speed multipliers
+    private double fractionalAccumulator = 0.0;
+
     /**
      * Execute one server tick for all machine components.
      * Order matches original AbstractMachineBlockEntity.onUpdateServer() exactly.
      */
-    public void tickServer(MachineInventory inventory, MachineEnergy energy,
+    public int tickServer(MachineInventory inventory, MachineEnergy energy,
             MachineProcessor processor, MachineAutomation automation,
-            IMachineProcess process, Level level, BlockPos pos) {
+            IMachineProcess process, Level level, BlockPos pos, float speedMultiplier) {
 
         // Step 1: Try to consume fuel if needed
         // Only when: no burn time, insufficient energy for the cost, and recipe
@@ -62,12 +65,30 @@ public class MachineTicker {
 
         // Step 2: Process recipe (advance progress, consume energy, craft on
         // completion)
-        processor.tick(process, energy);
+        // Apply speed multiplier by advancing the processor multiple times.
+        // Fractional multipliers are accumulated across ticks.
+        int integerTicks = (int) Math.floor(Math.max(0.0f, speedMultiplier));
+        double fractional = Math.max(0.0f, speedMultiplier) - integerTicks;
+        fractionalAccumulator += fractional;
+        if (fractionalAccumulator >= 1.0) {
+            integerTicks += (int) Math.floor(fractionalAccumulator);
+            fractionalAccumulator -= Math.floor(fractionalAccumulator);
+        }
+
+        // Execute processor.tick() integerTicks times (may be zero).
+        int successfulTicks = 0;
+        for (int i = 0; i < integerTicks; i++) {
+            if (processor.tick(process, energy)) {
+                successfulTicks++;
+            }
+        }
 
         // Step 3: Tick down fuel burn time
         energy.tickBurnTime();
 
         // Step 4: Auto-push outputs to adjacent inventories
         automation.autoPushOutputs(level, pos, inventory, outputSlots, rules);
+
+        return successfulTicks;
     }
 }

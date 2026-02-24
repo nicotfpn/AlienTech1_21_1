@@ -22,7 +22,7 @@ public class AncientChargerMenu extends AbstractContainerMenu {
 
     public AncientChargerMenu(int containerId, Inventory inv, FriendlyByteBuf extraData) {
         this(containerId, inv, inv.player.level().getBlockEntity(extraData.readBlockPos()),
-                new SimpleContainerData(4));
+                new SimpleContainerData(8));
     }
 
     public AncientChargerMenu(int containerId, Inventory inv, BlockEntity entity, ContainerData data) {
@@ -32,7 +32,7 @@ public class AncientChargerMenu extends AbstractContainerMenu {
         this.data = data;
 
         // Slot 0: Charge Slot
-        this.addSlot(new SlotItemHandler(blockEntity.getItemHandler(), 0, 80, 35));
+        this.addSlot(new SlotItemHandler(blockEntity.getItemHandler(), 0, 82, 37));
 
         addDataSlots(data);
 
@@ -41,15 +41,13 @@ public class AncientChargerMenu extends AbstractContainerMenu {
     }
 
     public int getEnergyStored() {
-        int low = data.get(0) & 0xFFFF;
-        int high = data.get(1) & 0xFFFF;
-        return low | (high << 16);
+        // Base class data: 4=low, 5=high
+        return net.nicotfpn.alientech.util.EnergyUtils.fromBits(data.get(4), data.get(5));
     }
 
     public int getMaxEnergy() {
-        int low = data.get(2) & 0xFFFF;
-        int high = data.get(3) & 0xFFFF;
-        return low | (high << 16);
+        // Base class data: 6=low, 7=high
+        return net.nicotfpn.alientech.util.EnergyUtils.fromBits(data.get(6), data.get(7));
     }
 
     public float getEnergyPercentage() {
@@ -114,14 +112,14 @@ public class AncientChargerMenu extends AbstractContainerMenu {
     private void addPlayerInventory(Inventory playerInventory) {
         for (int row = 0; row < 3; ++row) {
             for (int col = 0; col < 9; ++col) {
-                this.addSlot(new Slot(playerInventory, col + row * 9 + 9, 8 + col * 18, 84 + row * 18));
+                this.addSlot(new Slot(playerInventory, col + row * 9 + 9, 10 + col * 18, 86 + row * 18));
             }
         }
     }
 
     private void addPlayerHotbar(Inventory playerInventory) {
         for (int col = 0; col < 9; ++col) {
-            this.addSlot(new Slot(playerInventory, col, 8 + col * 18, 142));
+            this.addSlot(new Slot(playerInventory, col, 10 + col * 18, 144));
         }
     }
 }

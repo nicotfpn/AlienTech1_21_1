@@ -1,0 +1,17 @@
+{
+    "name": "Alloys & Disks",
+    "icon": "alientech:inertial_stability_alloy",
+    "category": "alientech:materials",
+    "pages": [
+        {
+            "type": "patchouli:crafting",
+            "recipe": "alientech:gravion_disk",
+            "text": "$(alien)Gravion Disk$(): Can store immense kinetic shockwaves."
+        },
+        {
+            "type": "patchouli:spotlight",
+            "item": "alientech:inertial_stability_alloy",
+            "text": "Forged in the Primal Catalyst via:$(br2)\u2022 $(alien)Concentrated Substrate$()$(br2)\u2022 $(alien)Neutrion Ingot$()$(br2)\u2022 $(alien)Graviton$()$(br2)$(br2)Provides the $(gold)Pyramid Core$() supreme stabilization."
+        }
+    ]
+}

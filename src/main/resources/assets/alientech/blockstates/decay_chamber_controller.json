@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "has_mob=false": {
+      "model": "alientech:block/decay_chamber_controller"
+    },
+    "has_mob=true": {
+      "model": "alientech:block/decay_chamber_controller"
+    }
+  }
+}

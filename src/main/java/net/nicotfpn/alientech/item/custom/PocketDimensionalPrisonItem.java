@@ -109,6 +109,25 @@ public class PocketDimensionalPrisonItem extends Item {
             return InteractionResult.PASS;
         }
 
+        // Release the mob into the world
+        net.minecraft.world.entity.Entity entity = net.nicotfpn.alientech.util.EntityStorageUtil.releaseMob(stack,
+                context.getLevel(), pos.relative(context.getClickedFace()));
+
+        if (entity != null) {
+            String entityName = entity.getDisplayName().getString();
+            player.displayClientMessage(
+                    net.minecraft.network.chat.Component.translatable("item.alientech.pocket_prison.released",
+                            entityName != null ? entityName : "Unknown")
+                            .withStyle(net.minecraft.ChatFormatting.GREEN),
+                    true);
+
+            // Play a sound
+            context.getLevel().playSound(null, pos, net.minecraft.sounds.SoundEvents.ENDERMAN_TELEPORT,
+                    net.minecraft.sounds.SoundSource.PLAYERS, 1.0F, 1.0F);
+
+            return InteractionResult.SUCCESS;
+        }
+
         return InteractionResult.PASS;
     }
 

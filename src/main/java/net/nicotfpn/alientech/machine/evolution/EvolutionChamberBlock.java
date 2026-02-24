@@ -61,10 +61,7 @@ public class EvolutionChamberBlock extends BaseEntityBlock {
     public void onRemove(@NotNull BlockState state, @NotNull net.minecraft.world.level.Level level,
             @NotNull BlockPos pos, @NotNull BlockState newState, boolean moved) {
         if (!state.is(newState.getBlock())) {
-            BlockEntity be = level.getBlockEntity(pos);
-            if (be instanceof EvolutionChamberBlockEntity chamber) {
-                // No drops needed - stateless machine
-            }
+            // Stateless machine — no drops needed
         }
         super.onRemove(state, level, pos, newState, moved);
     }

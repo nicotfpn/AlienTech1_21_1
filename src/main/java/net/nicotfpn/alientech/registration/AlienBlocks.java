@@ -19,6 +19,18 @@ public class AlienBlocks {
                         block -> new net.nicotfpn.alientech.item.custom.AncientBatteryBlockItem(block,
                                         new net.minecraft.world.item.Item.Properties().stacksTo(1)));
 
+        public static final BlockRegistryObject<net.nicotfpn.alientech.block.custom.CreativeAncientBatteryBlock, BlockItem> CREATIVE_ANCIENT_BATTERY = BLOCKS
+                        .register(
+                                        "creative_ancient_battery",
+                                        () -> new net.nicotfpn.alientech.block.custom.CreativeAncientBatteryBlock(
+                                                        BlockBehaviour.Properties.of()
+                                                                        .strength(-1.0f, 3600000.0f)
+                                                                        .noLootTable()
+                                                                        .sound(SoundType.METAL)),
+                                        block -> new BlockItem(block,
+                                                        new net.minecraft.world.item.Item.Properties()
+                                                                        .rarity(net.minecraft.world.item.Rarity.EPIC)));
+
         public static void register(net.neoforged.bus.api.IEventBus eventBus) {
                 BLOCKS.register(eventBus);
         }

@@ -1,21 +1,21 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "category": "misc",
-  "key": {
-    "R": {
-      "item": "alientech:rainbow_captured"
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "pattern": [
+        " I ",
+        "INI",
+        " I "
+    ],
+    "key": {
+        "I": {
+            "item": "minecraft:iron_ingot"
+        },
+        "N": {
+            "item": "alientech:neutrion_ingot"
+        }
     },
-    "G": {
-      "item": "alientech:gravion_disk"
+    "result": {
+        "id": "alientech:inertial_stability_alloy",
+        "count": 1
     }
-  },
-  "pattern": [
-    "RGR",
-    "GRG",
-    "RGR"
-  ],
-  "result": {
-    "count": 1,
-    "id": "alientech:inertial_stability_alloy"
-  }
 }

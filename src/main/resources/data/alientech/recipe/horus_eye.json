@@ -1,24 +1,27 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "category": "misc",
-  "key": {
-    "E": {
-      "item": "alientech:exotic_substrate"
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "pattern": [
+        "GNG",
+        "NED",
+        "GNG"
+    ],
+    "key": {
+        "G": {
+            "item": "minecraft:gold_nugget"
+        },
+        "N": {
+            "item": "alientech:neutrion_ingot"
+        },
+        "E": {
+            "item": "minecraft:ender_eye"
+        },
+        "D": {
+            "item": "minecraft:diamond"
+        }
     },
-    "G": {
-      "item": "alientech:gravion_disk"
-    },
-    "A": {
-      "item": "alientech:ancient_ankh"
+    "result": {
+        "id": "alientech:horus_eye",
+        "count": 1
     }
-  },
-  "pattern": [
-    "EGE",
-    "GAG",
-    "EGE"
-  ],
-  "result": {
-    "count": 1,
-    "id": "alientech:horus_eye"
-  }
 }

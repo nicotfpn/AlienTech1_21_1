@@ -10,7 +10,8 @@ import net.nicotfpn.alientech.Config;
 /**
  * Decay Vision Ability - Stage 1
  * <p>
- * Allows the player to see through the veil of decay, revealing hidden entities and structures.
+ * Allows the player to see through the veil of decay, revealing hidden entities
+ * and structures.
  * Grants night vision and glowing effect to nearby entities.
  */
 public class DecayVisionAbility extends BaseEvolutionAbility {
@@ -49,7 +50,8 @@ public class DecayVisionAbility extends BaseEvolutionAbility {
 
     @Override
     protected void applyEffect(ServerPlayer player) {
-        if (player == null || player.level() == null || !net.nicotfpn.alientech.util.CapabilityUtils.isValidServerLevel(player.level())) {
+        if (player == null || player.level() == null
+                || !net.nicotfpn.alientech.util.CapabilityUtils.isValidServerLevel(player.level())) {
             return;
         }
 
@@ -60,9 +62,9 @@ public class DecayVisionAbility extends BaseEvolutionAbility {
         }
 
         // Clamp duration to reasonable maximum (5 minutes)
-        duration = Math.min(duration, 6000);
+        final int effectDuration = Math.min(duration, 6000);
 
-        player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, duration, 0, false, false, true));
+        player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, effectDuration, 0, false, false, true));
 
         // Apply glowing to nearby entities (reveals them)
         double range = Config.ABILITY_DECAY_VISION_RANGE.get();
@@ -71,17 +73,17 @@ public class DecayVisionAbility extends BaseEvolutionAbility {
                 player.level().getEntitiesOfClass(
                         net.minecraft.world.entity.Entity.class,
                         player.getBoundingBox().inflate(range),
-                        entity -> entity != player && entity.isAlive()
-                ).forEach(entity -> {
-                    if (entity instanceof net.minecraft.world.entity.LivingEntity living) {
-                        try {
-                            int glowDuration = Math.max(1, duration / 2);
-                            living.addEffect(new MobEffectInstance(MobEffects.GLOWING, glowDuration, 0, false, false, true));
-                        } catch (Exception e) {
-                            // Ignore individual entity effect failures
-                        }
-                    }
-                });
+                        entity -> entity != player && entity.isAlive()).forEach(entity -> {
+                            if (entity instanceof net.minecraft.world.entity.LivingEntity living) {
+                                try {
+                                    int glowDuration = Math.max(1, effectDuration / 2);
+                                    living.addEffect(new MobEffectInstance(MobEffects.GLOWING, glowDuration, 0, false,
+                                            false, true));
+                                } catch (Exception e) {
+                                    // Ignore individual entity effect failures
+                                }
+                            }
+                        });
             } catch (Exception e) {
                 net.nicotfpn.alientech.AlienTech.LOGGER.error("Failed to apply decay vision effects", e);
             }

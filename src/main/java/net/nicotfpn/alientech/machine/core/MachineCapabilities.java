@@ -34,8 +34,8 @@ public final class MachineCapabilities {
 
         // Energy Storage capability
         event.registerBlockEntity(
-                Capabilities.EnergyStorage.BLOCK, type,
-                (be, side) -> be.getEnergy().getEnergyStorage());
+            Capabilities.EnergyStorage.BLOCK, type,
+            (be, side) -> new TierRestrictedEnergyStorage(be.getEnergy().getEnergyStorage(), be.getLevel()));
 
         // Item Handler capability (sided access for automation)
         event.registerBlockEntity(

@@ -30,6 +30,12 @@ public class ModBlockEntities {
                                         net.nicotfpn.alientech.registration.AlienBlocks.ANCIENT_BATTERY.get())
                                         .build(null));
 
+        public static final Supplier<BlockEntityType<CreativeAncientBatteryBlockEntity>> CREATIVE_ANCIENT_BATTERY_BE = BLOCK_ENTITIES
+                        .register("creative_ancient_battery_be", () -> BlockEntityType.Builder.of(
+                                        CreativeAncientBatteryBlockEntity::new,
+                                        net.nicotfpn.alientech.registration.AlienBlocks.CREATIVE_ANCIENT_BATTERY.get())
+                                        .build(null));
+
         // === Phase 3: Decay Chamber ===
 
         public static final Supplier<BlockEntityType<net.nicotfpn.alientech.machine.decay.DecayChamberControllerBlockEntity>> DECAY_CHAMBER_CONTROLLER_BE = BLOCK_ENTITIES

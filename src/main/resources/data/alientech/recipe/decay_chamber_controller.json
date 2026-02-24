@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "GCG",
+    "SDS",
+    "GPG"
+  ],
+  "key": {
+    "G": { "item": "alientech:graviton" },
+    "C": { "item": "alientech:concentrated_substrate" },
+    "S": { "item": "alientech:inertial_stability_alloy" },
+    "D": { "item": "minecraft:dispenser" },
+    "P": { "item": "alientech:decay_chamber" }
+  },
+  "result": {
+    "id": "alientech:decay_chamber_controller",
+    "count": 1
+  }
+}
+

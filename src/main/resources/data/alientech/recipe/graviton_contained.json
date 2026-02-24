@@ -1,21 +1,21 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "category": "misc",
-  "key": {
-    "G": {
-      "item": "alientech:graviton"
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "pattern": [
+        "GGG",
+        "GTG",
+        "GGG"
+    ],
+    "key": {
+        "G": {
+            "item": "minecraft:glass"
+        },
+        "T": {
+            "item": "alientech:graviton"
+        }
     },
-    "C": {
-      "item": "alientech:concentrated_substrate"
+    "result": {
+        "id": "alientech:graviton_contained",
+        "count": 1
     }
-  },
-  "pattern": [
-    "GCG",
-    "CGC",
-    "GCG"
-  ],
-  "result": {
-    "count": 1,
-    "id": "alientech:graviton_contained"
-  }
 }

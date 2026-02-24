@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "GGG",
+    "BEB",
+    "GGG"
+  ],
+  "key": {
+    "G": { "item": "alientech:inertial_stability_alloy" },
+    "B": { "item": "minecraft:glass" },
+    "E": { "item": "alientech:entropy_biomass" }
+  },
+  "result": {
+    "id": "alientech:entropy_reservoir",
+    "count": 1
+  }
+}
+

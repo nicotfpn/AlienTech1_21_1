@@ -1,0 +1,55 @@
+{
+    "name": "Pyramid Core",
+    "icon": "alientech:pyramid_core",
+    "category": "alientech:machines",
+    "pages": [
+        {
+            "type": "patchouli:text",
+            "text": "The absolute pinnacle of their engineering. The $(item)Pyramid Core$() does not generate power itself, but rather $(alien)resonates$() with reality, broadcasting a massive efficiency boost to nearby $(l:patchouli:machines/quantum_vacuum_turbine)Quantum Vacuum Turbines$(/l)."
+        },
+        {
+            "type": "patchouli:crafting",
+            "recipe": "alientech:pyramid_core"
+        },
+        {
+            "type": "patchouli:text",
+            "title": "Activation",
+            "text": "The Core remains dormant until built into a massive pyramidal structure. Once built, it must be ignited by consuming an $(l:patchouli:materials/alloys_disks)Inertial Stability Alloy$(/l) or touched by an $(l:patchouli:tools/ancient_ankh)Ancient Ankh$(/l)."
+        },
+        {
+            "type": "patchouli:multiblock",
+            "name": "Pyramid Tier 1",
+            "multiblock": {
+                "pattern": [
+                    [
+                        "  0  ",
+                        "     ",
+                        "     ",
+                        "     ",
+                        "     "
+                    ],
+                    [
+                        "     ",
+                        " GGG ",
+                        " GGG ",
+                        " GGG ",
+                        "     "
+                    ],
+                    [
+                        "AAAAA",
+                        "AAAAA",
+                        "AAAAA",
+                        "AAAAA",
+                        "AAAAA"
+                    ]
+                ],
+                "mapping": {
+                    "0": "alientech:pyramid_core",
+                    "G": "minecraft:gold_block",
+                    "A": "alientech:alien_pyramid_casing"
+                }
+            },
+            "text": "The Tier 1 Structure requires a 3x3 of $(gold)Gold Blocks$() directly beneath the Core, followed by a 5x5 of $(alien)Alien Pyramid Casing$(). Grants a modest boost."
+        }
+    ]
+}

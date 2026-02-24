@@ -1,0 +1,15 @@
+{
+    "name": "Pharaoh Sword",
+    "icon": "alientech:pharaoh_sword",
+    "category": "alientech:tools",
+    "pages": [
+        {
+            "type": "patchouli:text",
+            "text": "The sharpest blade to ever physically manifest in this dimension. Imbued with the destructive hunting forces of the Ancients, it severs molecular bonds rather than just cutting flesh."
+        },
+        {
+            "type": "patchouli:crafting",
+            "recipe": "alientech:pharaoh_sword"
+        }
+    ]
+}

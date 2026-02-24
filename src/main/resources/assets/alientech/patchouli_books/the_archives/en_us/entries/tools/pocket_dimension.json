@@ -1,0 +1,15 @@
+{
+    "name": "Pocket Dimensional Prison",
+    "icon": "alientech:pocket_dimensional_prison",
+    "category": "alientech:tools",
+    "pages": [
+        {
+            "type": "patchouli:text",
+            "text": "A terrifying device that weaponizes spatial geometry. Upon striking any living entity, the target is shrunk and folded into a pocket quantum dimension inside the prison. $(br2)Shift-Right click any block to violently violently expel them back into our reality."
+        },
+        {
+            "type": "patchouli:crafting",
+            "recipe": "alientech:pocket_dimensional_prison"
+        }
+    ]
+}

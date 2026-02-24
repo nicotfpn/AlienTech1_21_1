@@ -3,7 +3,8 @@ package net.nicotfpn.alientech.entropy;
 /**
  * Transaction-safe entropy transfer result.
  * <p>
- * Used to ensure entropy transfers are atomic: either fully succeed or fully fail.
+ * Used to ensure entropy transfers are atomic: either fully succeed or fully
+ * fail.
  * Prevents entropy duplication or loss from partial transfers.
  */
 public final class EntropyTransaction {
@@ -53,8 +54,8 @@ public final class EntropyTransaction {
      * 3. If both succeed, execute both operations
      * 4. Return transaction result
      * 
-     * @param source the source entropy handler
-     * @param dest the destination entropy handler
+     * @param source    the source entropy handler
+     * @param dest      the destination entropy handler
      * @param maxAmount maximum amount to transfer
      * @return transaction result
      */
@@ -84,16 +85,25 @@ public final class EntropyTransaction {
 
         // Step 4: Execute both operations atomically
         int extracted = source.extractEntropy(toTransfer, false);
-        if (extracted != toTransfer) {
+        if (extracted <= 0) {
             // Extraction failed - abort transaction
             return failed();
         }
 
         int inserted = dest.insertEntropy(extracted, false);
         if (inserted != extracted) {
-            // Insertion failed - entropy is lost (should not happen with proper handlers)
-            // This is a critical error state
-            return failed();
+            // Insertion partially or fully failed — roll back by returning entropy to
+            // source
+            int uninserted = extracted - inserted;
+            if (uninserted > 0) {
+                source.insertEntropy(uninserted, false);
+            }
+            // If nothing was inserted at all, it's a full rollback
+            if (inserted <= 0) {
+                return failed();
+            }
+            // Partial transfer succeeded
+            return committed(inserted);
         }
 
         return committed(inserted);

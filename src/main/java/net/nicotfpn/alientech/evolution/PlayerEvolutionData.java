@@ -3,7 +3,6 @@ package net.nicotfpn.alientech.evolution;
 import net.minecraft.nbt.CompoundTag;
 import net.nicotfpn.alientech.util.StateValidator;
 import net.nicotfpn.alientech.util.SafeNBT;
-import net.nicotfpn.alientech.util.AlienTechDebug;
 
 /**
  * Concrete implementation of {@link IEvolutionData}.
@@ -87,7 +86,7 @@ public class PlayerEvolutionData implements IEvolutionData {
         int oldStage = evolutionStage;
         evolutionStage = StateValidator.ensureNonNegative(evolutionStage);
         if (oldStage != evolutionStage) {
-            AlienTechDebug.EVOLUTION.log("Evolution stage corrected: {} -> {}", oldStage, evolutionStage);
+            // evolution stage corrected
             valid = false;
         }
         
@@ -95,7 +94,7 @@ public class PlayerEvolutionData implements IEvolutionData {
         int oldCapacity = entropyCapacity;
         entropyCapacity = Math.max(DEFAULT_CAPACITY, entropyCapacity);
         if (oldCapacity != entropyCapacity) {
-            AlienTechDebug.EVOLUTION.log("Entropy capacity corrected: {} -> {}", oldCapacity, entropyCapacity);
+            // entropy capacity corrected
             valid = false;
         }
         
@@ -103,8 +102,7 @@ public class PlayerEvolutionData implements IEvolutionData {
         int oldStored = storedEntropy;
         storedEntropy = StateValidator.clampEntropy(storedEntropy, entropyCapacity);
         if (oldStored != storedEntropy) {
-            AlienTechDebug.EVOLUTION.log("Stored entropy corrected: {} -> {} (capacity: {})", 
-                    oldStored, storedEntropy, entropyCapacity);
+                // stored entropy corrected
             valid = false;
         }
         
@@ -127,7 +125,7 @@ public class PlayerEvolutionData implements IEvolutionData {
         // Validate state after mutation
         validateState();
         
-        AlienTechDebug.EVOLUTION.log("Player inserted {} entropy (total: {}/{})", toInsert, storedEntropy, entropyCapacity);
+        // player inserted entropy
         return toInsert;
     }
 
@@ -141,7 +139,7 @@ public class PlayerEvolutionData implements IEvolutionData {
         // Validate state after mutation
         validateState();
         
-        AlienTechDebug.EVOLUTION.log("Player extracted {} entropy (remaining: {}/{})", toExtract, storedEntropy, entropyCapacity);
+        // player extracted entropy
         return toExtract;
     }
 

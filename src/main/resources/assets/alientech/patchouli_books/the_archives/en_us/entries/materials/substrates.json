@@ -1,0 +1,21 @@
+{
+    "name": "Substrates",
+    "icon": "alientech:concentrated_substrate",
+    "category": "alientech:materials",
+    "pages": [
+        {
+            "type": "patchouli:text",
+            "text": "Substrates form the chemical backbone of Alien technology, bridging the gap between primitive Overworld matter and extraterrestrial materials."
+        },
+        {
+            "type": "patchouli:crafting",
+            "recipe": "alientech:exotic_substrate",
+            "text": "$(alien)Exotic Substrate$() - The first step."
+        },
+        {
+            "type": "patchouli:crafting",
+            "recipe": "alientech:concentrated_substrate",
+            "text": "$(alien)Concentrated Substrate$() - Highly refined."
+        }
+    ]
+}

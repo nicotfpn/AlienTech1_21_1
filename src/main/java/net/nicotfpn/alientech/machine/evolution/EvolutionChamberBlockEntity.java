@@ -16,13 +16,12 @@ import net.minecraft.world.phys.AABB;
 import net.nicotfpn.alientech.Config;
 import net.nicotfpn.alientech.block.entity.ModBlockEntities;
 import net.nicotfpn.alientech.block.entity.base.AlienBlockEntity;
+import net.nicotfpn.alientech.entropy.EntropyStorage;
 import net.nicotfpn.alientech.entropy.IEntropyHandler;
 import net.nicotfpn.alientech.evolution.PlayerEvolutionData;
-import net.nicotfpn.alientech.evolution.PlayerEvolutionHelper;
 import net.nicotfpn.alientech.util.CapabilityUtils;
 import net.nicotfpn.alientech.util.SafeNBT;
 import net.nicotfpn.alientech.util.StateValidator;
-import net.nicotfpn.alientech.util.AlienTechDebug;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -50,6 +49,12 @@ public class EvolutionChamberBlockEntity extends AlienBlockEntity {
     private int targetStage = 0;
     private boolean isProcessing = false;
 
+    // Internal entropy buffer — cables push entropy here via capability
+    private final EntropyStorage entropyStorage;
+
+    // Scan throttle — player detection only every N ticks
+    private static final int PLAYER_SCAN_INTERVAL = 10;
+
     // Cached player reference (cleared on removal)
     @Nullable
     private ServerPlayer cachedPlayer = null;
@@ -58,6 +63,30 @@ public class EvolutionChamberBlockEntity extends AlienBlockEntity {
 
     public EvolutionChamberBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.EVOLUTION_CHAMBER_BE.get(), pos, state);
+        this.entropyStorage = new EntropyStorage(
+                Config.EVOLUTION_CHAMBER_ENTROPY_CAPACITY.get(),
+                1000, // maxInsert (transfer rate in)
+                0, // maxExtract (chamber consumes internally, not externally)
+                true, // canInsert — cables push entropy in
+                false, // canExtract — nothing should pull entropy out
+                this::setChanged);
+    }
+
+    // ==================== Entropy Access ====================
+
+    /**
+     * Returns the entropy handler for capability registration.
+     * Cables push entropy into this storage.
+     */
+    public IEntropyHandler getEntropyHandler() {
+        return entropyStorage;
+    }
+
+    /**
+     * Returns the internal entropy storage for direct access.
+     */
+    public EntropyStorage getEntropyStorage() {
+        return entropyStorage;
     }
 
     // ==================== Tick Logic ====================
@@ -69,16 +98,21 @@ public class EvolutionChamberBlockEntity extends AlienBlockEntity {
             return;
         }
 
+        // Throttle player detection — only scan every PLAYER_SCAN_INTERVAL ticks
+        if (ticker % PLAYER_SCAN_INTERVAL != 0 && !isProcessing) {
+            return;
+        }
+
         // Detect player standing on top
         ServerPlayer player = detectPlayerOnTop();
-        
+
         if (player == null) {
             // No player present - pause processing
             if (isProcessing) {
                 isProcessing = false;
                 cachedPlayer = null;
                 setChanged();
-                AlienTechDebug.EVOLUTION.log("Evolution Chamber: Player left, processing paused");
+                // player left, processing paused
             }
             return;
         }
@@ -105,7 +139,7 @@ public class EvolutionChamberBlockEntity extends AlienBlockEntity {
 
         // Determine target stage
         int newTargetStage = currentStage + 1;
-        
+
         // Validate target stage
         if (newTargetStage > maxStage) {
             newTargetStage = maxStage;
@@ -120,10 +154,10 @@ public class EvolutionChamberBlockEntity extends AlienBlockEntity {
         }
 
         // Get required progress and entropy cost
-        int[] ticksArray = Config.EVOLUTION_CHAMBER_TICKS_PER_STAGE.get();
-        int[] costArray = Config.EVOLUTION_CHAMBER_ENTROPY_COST.get();
-        
-        if (targetStage < 0 || targetStage >= ticksArray.length || targetStage >= costArray.length) {
+        java.util.List<? extends Integer> ticksList = Config.EVOLUTION_CHAMBER_TICKS_PER_STAGE.get();
+        java.util.List<? extends Integer> costList = Config.EVOLUTION_CHAMBER_ENTROPY_COST.get();
+
+        if (targetStage < 0 || targetStage >= ticksList.size() || targetStage >= costList.size()) {
             // Invalid stage - reset
             targetStage = 0;
             progress = 0;
@@ -132,8 +166,8 @@ public class EvolutionChamberBlockEntity extends AlienBlockEntity {
             return;
         }
 
-        int requiredProgress = ticksArray[targetStage];
-        int totalEntropyCost = costArray[targetStage];
+        int requiredProgress = ticksList.get(targetStage);
+        int totalEntropyCost = costList.get(targetStage);
 
         if (requiredProgress <= 0 || totalEntropyCost <= 0) {
             // Invalid config - reset
@@ -147,69 +181,59 @@ public class EvolutionChamberBlockEntity extends AlienBlockEntity {
         // Calculate entropy cost per tick (rounded up to ensure full cost is consumed)
         int entropyPerTick = (totalEntropyCost + requiredProgress - 1) / requiredProgress; // Ceiling division
 
-        // Get entropy handler from neighbors (entropy cable or other source)
-        // Check all directions for entropy input
-        IEntropyHandler entropySource = null;
-        for (net.minecraft.core.Direction dir : net.minecraft.core.Direction.values()) {
-                IEntropyHandler handler = CapabilityUtils.safeGetNeighborEntropyHandler(level, worldPosition, dir);
-                if (handler != null && handler.canExtract()) {
-                        entropySource = handler;
-                        break; // Use first available source
-                }
-        }
+        // Use internal storage as source (cables push into it)
+        IEntropyHandler entropySource = this.entropyStorage;
 
         if (entropySource == null) {
-                // No entropy source - pause processing
-                if (isProcessing) {
-                        isProcessing = false;
-                        setChanged();
-                }
-                return;
+            // No entropy source - pause processing
+            if (isProcessing) {
+                isProcessing = false;
+                setChanged();
+            }
+            return;
         }
 
         // Check if we can extract entropy for this tick
         int availableEntropy = entropySource.extractEntropy(entropyPerTick, true);
         if (availableEntropy < entropyPerTick) {
-                // Not enough entropy - pause processing
-                if (isProcessing) {
-                        isProcessing = false;
-                        setChanged();
-                }
-                return;
+            // Not enough entropy - pause processing
+            if (isProcessing) {
+                isProcessing = false;
+                setChanged();
+            }
+            return;
         }
 
         // Consume entropy atomically (extract from source - entropy is consumed)
         int extracted = entropySource.extractEntropy(entropyPerTick, false);
         if (extracted < entropyPerTick) {
-                // Extraction failed - pause processing
-                if (isProcessing) {
-                        isProcessing = false;
-                        setChanged();
-                }
-                return;
+            // Extraction failed - pause processing
+            if (isProcessing) {
+                isProcessing = false;
+                setChanged();
+            }
+            return;
         }
 
-        AlienTechDebug.EVOLUTION.log("Evolution Chamber: Consumed {} entropy (remaining: {})", 
-                extracted, entropySource.getEntropy());
+        // consumed entropy
 
         // Entropy consumed - process
         isProcessing = true;
         cachedPlayer = player;
         progress++;
 
-        AlienTechDebug.EVOLUTION.log("Evolution Chamber: Progress {}/{} (stage {} -> {})", 
-                progress, requiredProgress, currentStage, targetStage);
+        // evolution progress updated
 
         // Check if evolution complete
         if (progress >= requiredProgress) {
             // Evolution complete!
             data.setEvolutionStage(targetStage);
-            
+
             // Play sound
             level.playSound(null, worldPosition, SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.BLOCKS, 1.0f, 1.0f);
-            
-            AlienTechDebug.EVOLUTION.log("Evolution Chamber: Player evolved to stage {}", targetStage);
-            
+
+            // player evolved to target stage
+
             // Reset for next stage
             progress = 0;
             targetStage = 0;
@@ -235,11 +259,10 @@ public class EvolutionChamberBlockEntity extends AlienBlockEntity {
         double x = worldPosition.getX() + 0.5;
         double y = worldPosition.getY() + 1.0;
         double z = worldPosition.getZ() + 0.5;
-        
+
         AABB detectionBox = new AABB(
                 x - 0.5, y, z - 0.5,
-                x + 0.5, y + 2.0, z + 0.5
-        );
+                x + 0.5, y + 2.0, z + 0.5);
 
         // Find players in detection box
         if (level instanceof ServerLevel serverLevel) {
@@ -261,22 +284,22 @@ public class EvolutionChamberBlockEntity extends AlienBlockEntity {
      */
     public void validateState() {
         int maxStage = Config.MAX_EVOLUTION_STAGE.get();
-        
+
         // Validate target stage
         int oldTarget = targetStage;
         targetStage = StateValidator.clampInt(targetStage, 0, maxStage);
         if (oldTarget != targetStage) {
-            AlienTechDebug.EVOLUTION.log("Evolution Chamber: Target stage corrected {} -> {}", oldTarget, targetStage);
+            // target stage corrected
         }
 
         // Validate progress
-        int[] ticksArray = Config.EVOLUTION_CHAMBER_TICKS_PER_STAGE.get();
-        if (targetStage >= 0 && targetStage < ticksArray.length) {
-            int maxProgress = ticksArray[targetStage];
+        java.util.List<? extends Integer> ticksList = Config.EVOLUTION_CHAMBER_TICKS_PER_STAGE.get();
+        if (targetStage >= 0 && targetStage < ticksList.size()) {
+            int maxProgress = ticksList.get(targetStage);
             int oldProgress = progress;
             progress = StateValidator.clampProgress(progress, maxProgress);
             if (oldProgress != progress) {
-                AlienTechDebug.EVOLUTION.log("Evolution Chamber: Progress corrected {} -> {}", oldProgress, progress);
+                // progress corrected
             }
         } else {
             // Invalid target stage - reset progress
@@ -331,11 +354,11 @@ public class EvolutionChamberBlockEntity extends AlienBlockEntity {
     @Override
     public void loadAdditional(@NotNull CompoundTag tag, @NotNull HolderLookup.Provider provider) {
         super.loadAdditional(tag, provider);
-        
+
         progress = StateValidator.ensureNonNegative(SafeNBT.getInt(tag, KEY_PROGRESS, 0));
         targetStage = StateValidator.ensureNonNegative(SafeNBT.getInt(tag, KEY_TARGET_STAGE, 0));
         isProcessing = SafeNBT.getBoolean(tag, KEY_IS_PROCESSING, false);
-        
+
         // Validate state after load
         validateState();
     }

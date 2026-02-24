@@ -1,0 +1,20 @@
+{
+    "name": "Eye of Horus",
+    "icon": "alientech:horus_eye",
+    "category": "alientech:tools",
+    "pages": [
+        {
+            "type": "patchouli:text",
+            "text": "The silent observer of all things. Currently dormant, but when charged and infused with Neutrion, it awakens to become the $(item)Activated Eye of Horus$()."
+        },
+        {
+            "type": "patchouli:crafting",
+            "recipe": "alientech:horus_eye"
+        },
+        {
+            "type": "patchouli:crafting",
+            "recipe": "alientech:horus_eye_activated",
+            "text": "Once awakened, it grants abilities entirely unhindered by conventional physics, acting as a direct link to the \"Archives\" themselves."
+        }
+    ]
+}

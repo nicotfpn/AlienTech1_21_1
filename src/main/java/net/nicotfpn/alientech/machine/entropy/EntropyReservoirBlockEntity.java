@@ -12,7 +12,6 @@ import net.nicotfpn.alientech.block.entity.base.AbstractMachineBlockEntity;
 import net.nicotfpn.alientech.item.ModItems;
 import net.nicotfpn.alientech.machine.core.IMachineProcess;
 import net.nicotfpn.alientech.machine.core.SlotAccessRules;
-import net.nicotfpn.alientech.util.AlienTechDebug;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -51,6 +50,13 @@ public class EntropyReservoirBlockEntity extends AbstractMachineBlockEntity
                 0, // maxExtract (no output)
                 SLOT_COUNT);
     }
+
+    // ==================== Local Entropy Buffer (present for architectural consistency)
+    private final net.nicotfpn.alientech.entropy.EntropyStorage entropyStorage = new net.nicotfpn.alientech.entropy.EntropyStorage(
+            Config.ENTROPY_RESERVOIR_CAPACITY.get(), () -> {
+                setChanged();
+                markForSync();
+            });
 
     // ==================== IMachineProcess ====================
 
@@ -105,7 +111,7 @@ public class EntropyReservoirBlockEntity extends AbstractMachineBlockEntity
             }
         }
         
-        AlienTechDebug.MACHINE.log("EntropyReservoir completed processing");
+        // processing complete
     }
 
     @Override
@@ -128,6 +134,46 @@ public class EntropyReservoirBlockEntity extends AbstractMachineBlockEntity
     @Override
     public int getEnergyCost() {
         return Config.ENTROPY_RESERVOIR_ENERGY_PER_TICK.get();
+    }
+
+    @Override
+    protected net.nicotfpn.alientech.entropy.EntropyStorage getEntropyStorage() {
+        return entropyStorage;
+    }
+
+    /** Public entropy handler accessor for capability registration. */
+    public net.nicotfpn.alientech.entropy.IEntropyHandler getEntropyHandler() {
+        return entropyStorage;
+    }
+
+    @Override
+    protected int getEntropyPerTick() {
+        return 0;
+    }
+
+    @Override
+    protected int getFEPerTick() {
+        return getEnergyCost();
+    }
+
+    @Override
+    public void saveAdditional(@org.jetbrains.annotations.NotNull net.minecraft.nbt.CompoundTag tag, @org.jetbrains.annotations.NotNull net.minecraft.core.HolderLookup.Provider provider) {
+        super.saveAdditional(tag, provider);
+        net.minecraft.nbt.CompoundTag t = new net.minecraft.nbt.CompoundTag();
+        entropyStorage.save(t);
+        tag.put("EntropyReservoir_Entropy", t);
+    }
+
+    @Override
+    public void loadAdditional(@org.jetbrains.annotations.NotNull net.minecraft.nbt.CompoundTag tag, @org.jetbrains.annotations.NotNull net.minecraft.core.HolderLookup.Provider provider) {
+        super.loadAdditional(tag, provider);
+        net.minecraft.nbt.CompoundTag eTag = net.nicotfpn.alientech.util.SafeNBT.getCompound(tag, "EntropyReservoir_Entropy");
+        if (eTag != null) {
+            try {
+                entropyStorage.load(eTag);
+            } catch (Exception ignored) {
+            }
+        }
     }
 
     // ==================== SlotAccessRules ====================

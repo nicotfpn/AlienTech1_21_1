@@ -20,6 +20,30 @@ public final class EnergyUtils {
     }
 
     /**
+     * Helper to get the lower 16 bits of an integer.
+     * Used for ContainerData sync (which truncates to short).
+     */
+    public static int lowBits(int value) {
+        return value & 0xFFFF;
+    }
+
+    /**
+     * Helper to get the upper 16 bits of an integer.
+     * Used for ContainerData sync (which truncates to short).
+     */
+    public static int highBits(int value) {
+        return (value >> 16) & 0xFFFF;
+    }
+
+    /**
+     * Helper to reconstruct an integer from lower and upper 16 bits.
+     * Used for ContainerData sync.
+     */
+    public static int fromBits(int low, int high) {
+        return (low & 0xFFFF) | ((high & 0xFFFF) << 16);
+    }
+
+    /**
      * Pushes energy from a source to a target.
      * 
      * @param source      The source energy storage.

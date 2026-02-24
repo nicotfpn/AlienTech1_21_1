@@ -15,15 +15,17 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
+import net.nicotfpn.alientech.AlienTech;
 import net.nicotfpn.alientech.Config;
 import net.nicotfpn.alientech.block.entity.base.AlienElectricBlockEntity;
 import net.nicotfpn.alientech.item.ModItems;
 import net.nicotfpn.alientech.machine.turbine.QuantumVacuumTurbineBlockEntity;
 import net.nicotfpn.alientech.pyramid.PyramidStructureValidator;
 import net.nicotfpn.alientech.pyramid.PyramidTier;
+import net.nicotfpn.alientech.pyramid.PyramidNetwork;
 import net.nicotfpn.alientech.util.StateValidator;
 import net.nicotfpn.alientech.util.SafeNBT;
-import net.nicotfpn.alientech.util.AlienTechDebug;
+// debug helper removed from imports for cleaner code
 import net.nicotfpn.alientech.screen.PyramidCoreMenu;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -81,6 +83,8 @@ public class PyramidCoreBlockEntity extends AlienElectricBlockEntity {
                 case 1 -> (energyStorage.getEnergyStored() >> 16) & 0xFFFF;
                 case 2 -> isActive ? 1 : 0;
                 case 3 -> itemHandler.getStackInSlot(FUEL_SLOT).getCount();
+                case 4 -> net.nicotfpn.alientech.util.EnergyUtils.lowBits(energyStorage.getMaxEnergyStored());
+                case 5 -> net.nicotfpn.alientech.util.EnergyUtils.highBits(energyStorage.getMaxEnergyStored());
                 default -> 0;
             };
         }
@@ -91,7 +95,7 @@ public class PyramidCoreBlockEntity extends AlienElectricBlockEntity {
 
         @Override
         public int getCount() {
-            return 4;
+            return 6;
         }
     };
 
@@ -147,6 +151,23 @@ public class PyramidCoreBlockEntity extends AlienElectricBlockEntity {
 
             // Broadcast boost to nearby turbines
             broadcastBoostToTurbines();
+
+            // Generate entropy into the PyramidNetwork when active and structure valid.
+            try {
+                if (isActive && pyramidTier != PyramidTier.NONE) {
+                    int generation = Config.PYRAMID_CORE_GENERATION.get();
+                    if (generation > 0 && net.nicotfpn.alientech.util.CapabilityUtils.isValidServerLevel(level)) {
+                        int inserted = PyramidNetwork.get(level).insertEntropy(generation, false);
+                        if (inserted > 0) {
+                            // Mark for sync so clients see state changes (optional visual feedback)
+                            setChanged();
+                            markForSync();
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                AlienTech.LOGGER.debug("PyramidCore: failed to insert entropy into network", e);
+            }
         }
     }
 
@@ -289,7 +310,7 @@ public class PyramidCoreBlockEntity extends AlienElectricBlockEntity {
     @Override
     public void loadAdditional(@NotNull CompoundTag tag, @NotNull HolderLookup.Provider provider) {
         super.loadAdditional(tag, provider);
-        
+
         // Load inventory safely
         CompoundTag invTag = SafeNBT.getCompound(tag, "ItemHandler");
         if (invTag != null) {
@@ -299,11 +320,11 @@ public class PyramidCoreBlockEntity extends AlienElectricBlockEntity {
                 AlienTech.LOGGER.error("Failed to load item handler", e);
             }
         }
-        
+
         isActive = SafeNBT.getBoolean(tag, "IsActive", false);
         structureValid = SafeNBT.getBoolean(tag, "StructureValid", false);
         lastStructureCheck = SafeNBT.getInt(tag, "LastStructureCheck", 0);
-        
+
         // Pyramid Boost - load with safe defaults
         int tierOrd = SafeNBT.getInt(tag, "PyramidTier", PyramidTier.NONE.ordinal());
         if (tierOrd >= 0 && tierOrd < PyramidTier.values().length) {
@@ -311,10 +332,10 @@ public class PyramidCoreBlockEntity extends AlienElectricBlockEntity {
         } else {
             pyramidTier = PyramidTier.NONE;
         }
-        
+
         float boost = SafeNBT.getFloat(tag, "BoostMultiplier", 1.0f);
         boostMultiplier = StateValidator.clampMultiplier(boost, 1.0f, 1000.0f);
-        
+
         // Validate state after load
         validateState();
     }
@@ -326,23 +347,27 @@ public class PyramidCoreBlockEntity extends AlienElectricBlockEntity {
     public void validateState() {
         // Validate boost multiplier
         boostMultiplier = StateValidator.clampMultiplier(boostMultiplier, 1.0f, 1000.0f);
-        
+
         // Validate structure check cooldown
         structureCheckCooldown = StateValidator.ensureNonNegative(structureCheckCooldown);
-        
+
         // Validate pyramid tier consistency
-        if (pyramidTier == PyramidTier.NONE) {
-            // No tier - ensure boost is reset
-            if (boostMultiplier > 1.0f) {
-                AlienTechDebug.MACHINE.log("PyramidCore: Resetting boost multiplier (no tier)");
-                boostMultiplier = 1.0f;
+            if (pyramidTier == PyramidTier.NONE) {
+                // No tier - ensure boost is reset
+                if (boostMultiplier > 1.0f) {
+                    // reset multiplier
+                    boostMultiplier = 1.0f;
+                }
+                structureValid = false;
             }
-            structureValid = false;
-        }
     }
 
     @Override
     public void setRemoved() {
+        // Unregister from PyramidNetwork before removal to avoid stale cores
+        if (level != null) {
+            PyramidNetwork.get(level).unregisterCore(worldPosition);
+        }
         super.setRemoved();
         // Clear cached state
         pyramidTier = PyramidTier.NONE;
@@ -355,6 +380,10 @@ public class PyramidCoreBlockEntity extends AlienElectricBlockEntity {
         super.onLoad();
         // Validate state on load
         validateState();
+        // Register this core with PyramidNetwork for dynamic tier computation
+        if (level != null && !level.isClientSide()) {
+            PyramidNetwork.get(level).registerCore(worldPosition);
+        }
     }
 
     @Override

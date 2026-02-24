@@ -38,6 +38,12 @@ public class CommonModEvents {
                                 ModBlockEntities.ANCIENT_CHARGER_BE.get(),
                                 (be, context) -> be.getEnergyStorage());
 
+                // Ancient Charger - Item Handler
+                event.registerBlockEntity(
+                                Capabilities.ItemHandler.BLOCK,
+                                ModBlockEntities.ANCIENT_CHARGER_BE.get(),
+                                (be, context) -> be.getItemHandler());
+
                 // Ancient Battery - Energy Storage
                 event.registerBlockEntity(
                                 Capabilities.EnergyStorage.BLOCK,
@@ -49,6 +55,17 @@ public class CommonModEvents {
                                 Capabilities.ItemHandler.BLOCK,
                                 ModBlockEntities.ANCIENT_BATTERY_BE.get(),
                                 (be, context) -> be.getItemHandler());
+
+                // Creative Ancient Battery - Energy Storage
+                event.registerBlockEntity(
+                                Capabilities.EnergyStorage.BLOCK,
+                                ModBlockEntities.CREATIVE_ANCIENT_BATTERY_BE.get(),
+                                (be, context) -> {
+                                        if (be instanceof net.nicotfpn.alientech.block.entity.CreativeAncientBatteryBlockEntity cab) {
+                                                return cab.getEnergyStorage();
+                                        }
+                                        return null;
+                                });
 
                 // Activated Eye of Horus - Battery (5M FE)
                 event.registerItem(
@@ -111,6 +128,15 @@ public class CommonModEvents {
 
                 // === Phase 4: Entropy Reservoir ===
                 MachineCapabilities.registerMachine(event, ModBlockEntities.ENTROPY_RESERVOIR_BE.get());
+                // Entropy Reservoir - expose entropy capability for cables
+                event.registerBlockEntity(
+                                net.nicotfpn.alientech.entropy.ModCapabilities.ENTROPY,
+                                ModBlockEntities.ENTROPY_RESERVOIR_BE.get(),
+                                (be, context) -> {
+                                        if (be instanceof net.nicotfpn.alientech.machine.entropy.EntropyReservoirBlockEntity reservoir)
+                                                return reservoir.getEntropyHandler();
+                                        return null;
+                                });
 
                 // === Phase 5: Quantum Vacuum Turbine ===
 
@@ -136,6 +162,15 @@ public class CommonModEvents {
                                         if (be instanceof net.nicotfpn.alientech.machine.evolution.EvolutionChamberBlockEntity chamber) {
                                                 return chamber.getEntropyHandler();
                                         }
+                                        return null;
+                                });
+                // Primal Catalyst - expose entropy capability (local buffer)
+                event.registerBlockEntity(
+                                net.nicotfpn.alientech.entropy.ModCapabilities.ENTROPY,
+                                ModBlockEntities.PRIMAL_CATALYST_BE.get(),
+                                (be, context) -> {
+                                        if (be instanceof net.nicotfpn.alientech.block.entity.PrimalCatalystBlockEntity pc)
+                                                return pc.getEntropyHandler();
                                         return null;
                                 });
         }

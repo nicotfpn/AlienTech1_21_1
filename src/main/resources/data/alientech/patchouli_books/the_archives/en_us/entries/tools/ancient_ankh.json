@@ -1,0 +1,15 @@
+{
+    "name": "Ancient Ankh",
+    "icon": "alientech:ancient_ankh",
+    "category": "alientech:tools",
+    "pages": [
+        {
+            "type": "patchouli:text",
+            "text": "A relic of pure divinity, vibrating with a frequency that nullifies entropy. It is capable of activating the $(item)Pyramid Core$() structure infinitely, without being consumed in the process like primitive alloys."
+        },
+        {
+            "type": "patchouli:crafting",
+            "recipe": "alientech:ancient_ankh"
+        }
+    ]
+}

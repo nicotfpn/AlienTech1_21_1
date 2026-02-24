@@ -130,19 +130,27 @@ public class AncientBatteryBlock extends Block implements EntityBlock {
         return clientType == serverType ? (BlockEntityTicker<A>) ticker : null;
     }
 
+    private static final VoxelShape SHAPE_NS = Shapes.or(
+            Block.box(3, 0, 3, 13, 2, 13), // Base
+            Block.box(3.6, 2, 3.6, 12.4, 10, 12.4), // Core
+            Block.box(3, 10, 3, 13, 12, 13), // Top
+            Block.box(7.5, 12, 4, 8.5, 14, 12) // Antenna NS
+    );
+
+    private static final VoxelShape SHAPE_EW = Shapes.or(
+            Block.box(3, 0, 3, 13, 2, 13), // Base
+            Block.box(3.6, 2, 3.6, 12.4, 10, 12.4), // Core
+            Block.box(3, 10, 3, 13, 12, 13), // Top
+            Block.box(4, 12, 7.5, 12, 14, 8.5) // Antenna EW
+    );
+
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        // Ancient Battery Model:
-        // Base plate: 3,0,3 to 13,2,13
-        // Core body: 3.6,2,3.6 to 12.4,10,12.4
-        // Top plate: 3,10,3 to 13,12,13
-        // Antenna: 7.5,12,4 to 8.5,14,12
-        return Shapes.or(
-                Block.box(3, 0, 3, 13, 2, 13), // Base
-                Block.box(3.6, 2, 3.6, 12.4, 10, 12.4), // Core
-                Block.box(3, 10, 3, 13, 12, 13), // Top
-                Block.box(7.5, 12, 4, 8.5, 14, 12) // Antenna
-        );
+        Direction dir = state.getValue(FACING);
+        if (dir == Direction.EAST || dir == Direction.WEST) {
+            return SHAPE_EW;
+        }
+        return SHAPE_NS;
     }
 
     @Override

@@ -13,14 +13,14 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.energy.IEnergyStorage;
+import net.nicotfpn.alientech.AlienTech;
 import net.nicotfpn.alientech.Config;
 import net.nicotfpn.alientech.block.entity.ModBlockEntities;
 import net.nicotfpn.alientech.block.entity.base.AlienBlockEntity;
 import net.nicotfpn.alientech.item.ModItems;
 import net.nicotfpn.alientech.util.StateValidator;
 import net.nicotfpn.alientech.util.SafeNBT;
-import net.nicotfpn.alientech.util.AlienTechDebug;
-import net.neoforged.neoforge.energy.EnergyStorage;
+import net.nicotfpn.alientech.util.SyncableEnergyStorage;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -77,16 +77,17 @@ public class QuantumVacuumTurbineBlockEntity extends AlienBlockEntity {
         }
     };
 
-    private final EnergyStorage energyStorage;
+    private final SyncableEnergyStorage energyStorage;
 
     // ==================== Constructor ====================
 
     public QuantumVacuumTurbineBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.QUANTUM_VACUUM_TURBINE_BE.get(), pos, state);
-        this.energyStorage = new EnergyStorage(
+        this.energyStorage = new SyncableEnergyStorage(
                 Config.QVT_ENERGY_CAPACITY.get(),
                 0, // maxReceive = 0 (generator, no input)
-                Config.QVT_ENERGY_CAPACITY.get() // maxExtract = capacity (unlimited push)
+                Config.QVT_ENERGY_CAPACITY.get(), // maxExtract = capacity (unlimited push)
+                this::setChanged // onChanged callback
         );
     }
 
@@ -123,19 +124,19 @@ public class QuantumVacuumTurbineBlockEntity extends AlienBlockEntity {
                 setChanged();
             } else {
                 burnTime--;
-                
+
                 int baseFE = Config.QVT_FE_PER_TICK.get();
                 if (baseFE > 0 && pyramidBoostMultiplier >= 1.0f) {
                     // Calculate boosted FE (prevent overflow)
                     long boostedFELong = (long) baseFE * (long) Math.max(1.0f, pyramidBoostMultiplier);
                     int boostedFE = boostedFELong > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) boostedFELong;
-                    
+
                     int space = energyStorage.getMaxEnergyStored() - energyStorage.getEnergyStored();
                     if (space > 0) {
                         int toGenerate = Math.min(boostedFE, space);
                         if (toGenerate > 0) {
                             energyStorage.receiveEnergy(toGenerate, false);
-                            AlienTechDebug.MACHINE.log("QVT generated {} FE (boost: {}x)", toGenerate, pyramidBoostMultiplier);
+                                // generation logged in debug builds only
                         }
                     }
                 }
@@ -230,7 +231,7 @@ public class QuantumVacuumTurbineBlockEntity extends AlienBlockEntity {
         return maxBurnTime;
     }
 
-    public EnergyStorage getEnergyStorage() {
+    public SyncableEnergyStorage getEnergyStorage() {
         return energyStorage;
     }
 
@@ -314,16 +315,16 @@ public class QuantumVacuumTurbineBlockEntity extends AlienBlockEntity {
     @Override
     public void loadAdditional(@NotNull CompoundTag tag, @NotNull HolderLookup.Provider provider) {
         super.loadAdditional(tag, provider);
-        
+
         // Validate and load burn time with safe defaults
         burnTime = StateValidator.ensureNonNegative(SafeNBT.getInt(tag, KEY_BURN_TIME, 0));
         maxBurnTime = StateValidator.ensureNonNegative(SafeNBT.getInt(tag, KEY_MAX_BURN_TIME, 0));
-        
+
         // Clamp burn time to max
         if (maxBurnTime > 0 && burnTime > maxBurnTime) {
             burnTime = maxBurnTime;
         }
-        
+
         if (tag.contains("FuelInventory")) {
             try {
                 fuelInventory.deserializeNBT(provider, SafeNBT.getCompound(tag, "FuelInventory"));
@@ -331,18 +332,18 @@ public class QuantumVacuumTurbineBlockEntity extends AlienBlockEntity {
                 AlienTech.LOGGER.error("Failed to load fuel inventory", e);
             }
         }
-        
+
         if (tag.contains("Energy")) {
             int energy = SafeNBT.getInt(tag, "Energy", 0);
-            if (energy > 0) {
-                energyStorage.receiveEnergy(Math.min(energy, energyStorage.getMaxEnergyStored()), false);
-            }
+            int clamped = Math.max(0, Math.min(energy, energyStorage.getMaxEnergyStored()));
+            // Use setEnergyDirectly to bypass maxReceive=0 limit (generators don't receive)
+            energyStorage.setEnergyDirectly(clamped);
         }
-        
+
         // Validate pyramid boost multiplier
         float boost = SafeNBT.getFloat(tag, KEY_PYRAMID_BOOST, 1.0f);
         pyramidBoostMultiplier = StateValidator.clampMultiplier(boost, 1.0f, 1000.0f);
-        
+
         // Validate state after load
         validateState();
     }
@@ -354,13 +355,13 @@ public class QuantumVacuumTurbineBlockEntity extends AlienBlockEntity {
     public void validateState() {
         // Validate burn time
         burnTime = StateValidator.clampProgress(burnTime, maxBurnTime);
-        
+
         // Validate pyramid boost multiplier
         pyramidBoostMultiplier = StateValidator.clampMultiplier(pyramidBoostMultiplier, 1.0f, 1000.0f);
-        
+
         // Validate boost ticks remaining
         boostTicksRemaining = StateValidator.ensureNonNegative(boostTicksRemaining);
-        
+
         // Energy storage validation is handled by EnergyStorage itself
     }
 

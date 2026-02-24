@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "GNG",
+    "EPE",
+    "OGO"
+  ],
+  "key": {
+    "G": { "item": "alientech:graviton" },
+    "N": { "item": "alientech:neutrion_ingot" },
+    "E": { "item": "alientech:exotic_substrate" },
+    "P": { "item": "minecraft:ender_pearl" },
+    "O": { "item": "minecraft:obsidian" }
+  },
+  "result": {
+    "id": "alientech:pocket_dimensional_prison",
+    "count": 1
+  }
+}
+

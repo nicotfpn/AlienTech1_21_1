@@ -50,7 +50,8 @@ public class GravitationalPullAbility extends BaseEvolutionAbility {
 
     @Override
     protected void applyEffect(ServerPlayer player) {
-        if (player == null || player.level() == null || !net.nicotfpn.alientech.util.CapabilityUtils.isValidServerLevel(player.level())) {
+        if (player == null || player.level() == null
+                || !net.nicotfpn.alientech.util.CapabilityUtils.isValidServerLevel(player.level())) {
             return;
         }
 
@@ -59,65 +60,64 @@ public class GravitationalPullAbility extends BaseEvolutionAbility {
             return; // Invalid config
         }
 
-        double strength = Config.ABILITY_GRAVITATIONAL_PULL_STRENGTH.get();
-        if (strength <= 0 || strength > 5.0) {
+        double baseStrength = Config.ABILITY_GRAVITATIONAL_PULL_STRENGTH.get();
+        if (baseStrength <= 0 || baseStrength > 5.0) {
             return; // Invalid config
         }
-        
+
         // Scale strength with evolution stage (capped)
-        net.nicotfpn.alientech.evolution.PlayerEvolutionData data = 
-            net.nicotfpn.alientech.evolution.PlayerEvolutionHelper.get(player);
+        net.nicotfpn.alientech.evolution.PlayerEvolutionData data = net.nicotfpn.alientech.evolution.PlayerEvolutionHelper
+                .get(player);
         if (data != null) {
             double stageMultiplier = 1.0 + Math.min(data.getEvolutionStage(), 10) * 0.2; // Cap at 10 stages
-            strength *= stageMultiplier;
+            baseStrength *= stageMultiplier;
         }
 
         // Clamp strength to reasonable maximum
-        strength = Math.min(strength, 10.0);
+        final double strength = Math.min(baseStrength, 10.0);
 
         Vec3 playerPos = player.position();
-        
+
         try {
             player.level().getEntitiesOfClass(
                     Entity.class,
                     player.getBoundingBox().inflate(range),
-                    entity -> entity != player && entity.isAlive() && !entity.isSpectator()
-            ).forEach(entity -> {
-                try {
-                    Vec3 entityPos = entity.position();
-                    Vec3 direction = playerPos.subtract(entityPos);
-                    double distance = direction.length();
-                    
-                    if (distance < 0.1) {
-                        return; // Too close, skip to avoid division by zero
-                    }
-                    
-                    direction = direction.normalize();
-                    
-                    // Apply pull force
-                    Vec3 velocity = entity.getDeltaMovement();
-                    Vec3 pull = direction.scale(strength);
-                    Vec3 newVelocity = velocity.add(pull);
-                    
-                    // Clamp velocity to prevent extreme speeds
-                    double maxSpeed = 2.0; // Reasonable maximum
-                    if (newVelocity.length() > maxSpeed) {
-                        newVelocity = newVelocity.normalize().scale(maxSpeed);
-                    }
-                    
-                    entity.setDeltaMovement(newVelocity);
-                    
-                    // Reset fall distance to prevent fall damage from pull
-                    if (entity instanceof LivingEntity living) {
-                        living.fallDistance = 0;
-                    }
-                    
-                    // Mark entity as moved
-                    entity.hurtMarked = true;
-                } catch (Exception e) {
-                    // Ignore individual entity pull failures
-                }
-            });
+                    entity -> entity != player && entity.isAlive() && !entity.isSpectator()).forEach(entity -> {
+                        try {
+                            Vec3 entityPos = entity.position();
+                            Vec3 direction = playerPos.subtract(entityPos);
+                            double distance = direction.length();
+
+                            if (distance < 0.1) {
+                                return; // Too close, skip to avoid division by zero
+                            }
+
+                            direction = direction.normalize();
+
+                            // Apply pull force
+                            Vec3 velocity = entity.getDeltaMovement();
+                            Vec3 pull = direction.scale(strength);
+                            Vec3 newVelocity = velocity.add(pull);
+
+                            // Clamp velocity to prevent extreme speeds
+                            double maxSpeed = 2.0; // Reasonable maximum
+                            if (newVelocity.length() > maxSpeed) {
+                                newVelocity = newVelocity.normalize().scale(maxSpeed);
+                            }
+
+                            entity.setDeltaMovement(newVelocity);
+
+                            // Reset fall distance to prevent fall damage from pull
+                            if (entity instanceof LivingEntity living) {
+                                living.fallDistance = 0;
+                            }
+
+                            // Mark entity as moved
+                            entity.hurtMarked = true;
+                        } catch (Exception e) {
+                            // Ignore individual entity pull failures
+                        }
+                    });
         } catch (Exception e) {
             net.nicotfpn.alientech.AlienTech.LOGGER.error("Failed to apply gravitational pull", e);
         }

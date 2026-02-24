@@ -9,7 +9,6 @@ import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.neoforge.items.SlotItemHandler;
 import net.nicotfpn.alientech.block.ModBlocks;
@@ -42,7 +41,7 @@ public class PrimalCatalystMenu extends AbstractContainerMenu {
 
     public PrimalCatalystMenu(int containerId, Inventory inv, FriendlyByteBuf extraData) {
         this(containerId, inv, inv.player.level().getBlockEntity(extraData.readBlockPos()),
-                new SimpleContainerData(6));
+                new SimpleContainerData(12));
     }
 
     // ==================== Constructor (Server) ====================
@@ -52,18 +51,19 @@ public class PrimalCatalystMenu extends AbstractContainerMenu {
         blockEntity = (PrimalCatalystBlockEntity) entity;
         this.data = data;
 
-        // Input slots: top row (3 slots)
-        this.addSlot(new SlotItemHandler(blockEntity.getInventory().getHandler(), 0, 30, 17)); // Input 1
-        this.addSlot(new SlotItemHandler(blockEntity.getInventory().getHandler(), 1, 48, 17)); // Input 2
-        this.addSlot(new SlotItemHandler(blockEntity.getInventory().getHandler(), 2, 66, 17)); // Input 3
+        // Input slots: vertical column (from mc_gui_generator.py: draw at 56,14 / 56,34
+        // / 56,54 -> item pos +1)
+        this.addSlot(new SlotItemHandler(blockEntity.getInventory().getHandler(), 0, 58, 16)); // Input 1
+        this.addSlot(new SlotItemHandler(blockEntity.getInventory().getHandler(), 1, 58, 36)); // Input 2
+        this.addSlot(new SlotItemHandler(blockEntity.getInventory().getHandler(), 2, 58, 56)); // Input 3
 
-        // Fuel slot: middle-left
-        this.addSlot(new FuelSlot(blockEntity.getInventory().getHandler(), 3, 30, 53));
+        // Fuel slot: under energy bar (draw at 8,54 -> item pos +1)
+        this.addSlot(new FuelSlot(blockEntity.getInventory().getHandler(), 3, 10, 56));
 
-        // Output slot: right side
-        this.addSlot(new OutputSlot(blockEntity.getInventory().getHandler(), 4, 124, 35));
+        // Output slot: right side (draw at 120,33 -> item pos +1)
+        this.addSlot(new OutputSlot(blockEntity.getInventory().getHandler(), 4, 122, 35));
 
-        // Sync all 6 data values
+        // Sync all data values (extended)
         addDataSlots(data);
 
         // Player inventory and hotbar
@@ -80,8 +80,8 @@ public class PrimalCatalystMenu extends AbstractContainerMenu {
     public int getScaledProgress() {
         int progress = data.get(0);
         int maxProgress = data.get(1);
-        int arrowWidth = 26; // pixel width of progress arrow
-        return maxProgress != 0 && progress != 0 ? progress * arrowWidth / maxProgress : 0;
+        int barWidth = 34; // pixel width of progress bar (from mc_gui_generator.py)
+        return maxProgress != 0 && progress != 0 ? progress * barWidth / maxProgress : 0;
     }
 
     public boolean isBurning() {
@@ -96,18 +96,26 @@ public class PrimalCatalystMenu extends AbstractContainerMenu {
     }
 
     public int getScaledEnergy() {
-        int energy = data.get(4);
-        int maxEnergy = data.get(5);
-        int barHeight = 52; // pixel height of energy bar
-        return maxEnergy != 0 && energy != 0 ? energy * barHeight / maxEnergy : 0;
+        int energy = getEnergy();
+        int maxEnergy = getMaxEnergy();
+        int barHeight = 44; // pixel height of energy bar (from mc_gui_generator.py)
+        return maxEnergy != 0 && energy != 0 ? (int) ((long) energy * barHeight / maxEnergy) : 0;
     }
 
     public int getEnergy() {
-        return data.get(4);
+        return net.nicotfpn.alientech.util.EnergyUtils.fromBits(data.get(4), data.get(5));
     }
 
     public int getMaxEnergy() {
-        return data.get(5);
+        return net.nicotfpn.alientech.util.EnergyUtils.fromBits(data.get(6), data.get(7));
+    }
+
+    public int getEntropy() {
+        return net.nicotfpn.alientech.util.EnergyUtils.fromBits(data.get(8), data.get(9));
+    }
+
+    public int getMaxEntropy() {
+        return net.nicotfpn.alientech.util.EnergyUtils.fromBits(data.get(10), data.get(11));
     }
 
     // ==================== Shift-Click Transfer ====================
@@ -129,16 +137,9 @@ public class PrimalCatalystMenu extends AbstractContainerMenu {
             }
         } else {
             // Moving FROM player TO machine
-            // Try fuel slot first if it's a coal block
-            if (sourceStack.is(Items.COAL_BLOCK)) {
-                if (!moveItemStackTo(sourceStack, 3, 4, false)) {
-                    return ItemStack.EMPTY;
-                }
-            } else {
-                // Try input slots
-                if (!moveItemStackTo(sourceStack, 0, 3, false)) {
-                    return ItemStack.EMPTY;
-                }
+            // Try input slots
+            if (!moveItemStackTo(sourceStack, 0, 3, false)) {
+                return ItemStack.EMPTY;
             }
         }
 
@@ -163,14 +164,14 @@ public class PrimalCatalystMenu extends AbstractContainerMenu {
     private void addPlayerInventory(Inventory playerInventory) {
         for (int i = 0; i < 3; ++i) {
             for (int l = 0; l < 9; ++l) {
-                this.addSlot(new Slot(playerInventory, l + i * 9 + 9, 8 + l * 18, 84 + i * 18));
+                this.addSlot(new Slot(playerInventory, l + i * 9 + 9, 10 + l * 18, 86 + i * 18));
             }
         }
     }
 
     private void addPlayerHotbar(Inventory playerInventory) {
         for (int i = 0; i < 9; ++i) {
-            this.addSlot(new Slot(playerInventory, i, 8 + i * 18, 142));
+            this.addSlot(new Slot(playerInventory, i, 10 + i * 18, 144));
         }
     }
 
@@ -200,7 +201,7 @@ public class PrimalCatalystMenu extends AbstractContainerMenu {
 
         @Override
         public boolean mayPlace(ItemStack stack) {
-            return stack.is(Items.COAL_BLOCK);
+            return false; // Fuel not supported for Primal Catalyst
         }
     }
 }

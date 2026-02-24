@@ -24,6 +24,9 @@ public class ModMenuTypes {
         public static final DeferredHolder<MenuType<?>, MenuType<AncientChargerMenu>> ANCIENT_CHARGER_MENU = MENUS
                         .register("ancient_charger_menu", () -> IMenuTypeExtension.create(AncientChargerMenu::new));
 
+        public static final DeferredHolder<MenuType<?>, MenuType<DecayChamberMenu>> DECAY_CHAMBER_MENU = MENUS
+                        .register("decay_chamber_menu", () -> IMenuTypeExtension.create(DecayChamberMenu::new));
+
         public static void register(IEventBus eventBus) {
                 MENUS.register(eventBus);
         }

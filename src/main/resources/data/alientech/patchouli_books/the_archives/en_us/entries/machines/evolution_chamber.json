@@ -1,0 +1,15 @@
+{
+    "name": "Evolution Chamber",
+    "icon": "alientech:evolution_chamber",
+    "category": "alientech:machines",
+    "pages": [
+        {
+            "type": "patchouli:text",
+            "text": "The antithesis to the Decay Chamber. By forcefully injecting $(alien)Entropy$() into lesser materials, this chamber forces unnatural, rapid mutation into hyper-evolved exotic states."
+        },
+        {
+            "type": "patchouli:crafting",
+            "recipe": "alientech:evolution_chamber"
+        }
+    ]
+}

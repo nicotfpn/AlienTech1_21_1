@@ -13,6 +13,7 @@ import net.nicotfpn.alientech.screen.AncientChargerScreen;
 import net.nicotfpn.alientech.screen.ModMenuTypes;
 import net.nicotfpn.alientech.screen.PrimalCatalystScreen;
 import net.nicotfpn.alientech.screen.PyramidCoreScreen;
+import net.nicotfpn.alientech.screen.DecayChamberScreen;
 
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.nicotfpn.alientech.block.entity.ModBlockEntities;
@@ -37,5 +38,6 @@ public class ClientEvents {
         event.register(ModMenuTypes.PYRAMID_CORE_MENU.get(), PyramidCoreScreen::new);
         event.register(ModMenuTypes.ANCIENT_BATTERY_MENU.get(), AncientBatteryScreen::new);
         event.register(ModMenuTypes.ANCIENT_CHARGER_MENU.get(), AncientChargerScreen::new);
+        event.register(ModMenuTypes.DECAY_CHAMBER_MENU.get(), DecayChamberScreen::new);
     }
 }

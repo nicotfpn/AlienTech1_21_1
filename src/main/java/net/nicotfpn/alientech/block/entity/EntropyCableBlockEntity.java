@@ -12,8 +12,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.nicotfpn.alientech.Config;
 import net.nicotfpn.alientech.entropy.EntropyTransaction;
 import net.nicotfpn.alientech.entropy.IEntropyHandler;
-import net.nicotfpn.alientech.util.CapabilityUtils;
 import net.nicotfpn.alientech.util.AlienTechDebug;
+import net.nicotfpn.alientech.util.CapabilityUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -42,16 +42,32 @@ public class EntropyCableBlockEntity extends BlockEntity {
 
     /**
      * Called every server tick by the block's ticker.
-     * Transfers entropy between adjacent IEntropyHandler blocks using transaction-safe logic.
+     * Transfers entropy between adjacent IEntropyHandler blocks using
+     * transaction-safe logic.
      * <p>
-     * Deterministic behavior: processes directions in order, prevents double-transfer.
+     * Deterministic behavior: processes directions in enum order, prevents
+     * double-transfer.
+     * Throttled to run every TICK_INTERVAL ticks for performance. Transfer rate is
+     * scaled proportionally to maintain the same throughput per second.
      */
+    private static final int TICK_INTERVAL = 5;
+    private int tickCount = 0;
+
     public void serverTick() {
+        tickCount++;
+
         if (!CapabilityUtils.isValidServerLevel(level)) {
             return;
         }
 
-        int transferRate = Config.ENTROPY_CABLE_TRANSFER_RATE.get();
+        // Throttle: only process every TICK_INTERVAL ticks
+        if (tickCount % TICK_INTERVAL != 0) {
+            return;
+        }
+
+        // Scale transfer rate proportionally to maintain throughput
+        int baseRate = Config.ENTROPY_CABLE_TRANSFER_RATE.get();
+        int transferRate = baseRate * TICK_INTERVAL;
         if (transferRate <= 0) {
             return; // Invalid config
         }
@@ -79,7 +95,7 @@ public class EntropyCableBlockEntity extends BlockEntity {
                 EntropyTransaction transaction = EntropyTransaction.transfer(source, dest, transferRate);
                 if (transaction.isCommitted()) {
                     int amount = transaction.getAmount();
-                    AlienTechDebug.ENTROPY.log("Cable transferred {} entropy from {} to {}", 
+                    AlienTechDebug.ENTROPY.log("Cable transferred {} entropy from {} to {}",
                             amount, sourceDir, destDir);
                     // Transfer succeeded - continue to next destination
                     // Note: source may now be empty, but we continue checking other destinations
@@ -91,7 +107,8 @@ public class EntropyCableBlockEntity extends BlockEntity {
     }
 
     /**
-     * Validate cable state (stateless, so this is a no-op but kept for consistency).
+     * Validate cable state (stateless, so this is a no-op but kept for
+     * consistency).
      */
     public void validateState() {
         // Entropy cables are stateless - nothing to validate
@@ -111,7 +128,8 @@ public class EntropyCableBlockEntity extends BlockEntity {
     }
 
     /**
-     * Safely get the IEntropyHandler capability from a neighbor in the given direction.
+     * Safely get the IEntropyHandler capability from a neighbor in the given
+     * direction.
      *
      * @param dir direction to check (must not be null)
      * @return the handler, or null if not present or invalid

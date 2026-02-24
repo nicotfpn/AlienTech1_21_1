@@ -20,7 +20,7 @@ public class PyramidCoreMenu extends AbstractContainerMenu {
 
     public PyramidCoreMenu(int pContainerId, Inventory inv, FriendlyByteBuf extraData) {
         this(pContainerId, inv, inv.player.level().getBlockEntity(extraData.readBlockPos()),
-                new SimpleContainerData(4));
+                new SimpleContainerData(12));
     }
 
     public PyramidCoreMenu(int pContainerId, Inventory inv, BlockEntity entity, ContainerData data) {
@@ -29,7 +29,7 @@ public class PyramidCoreMenu extends AbstractContainerMenu {
         this.data = data;
 
         // Eye of Horus slot
-        this.addSlot(new SlotItemHandler(blockEntity.getItemHandler(), 0, 80, 35));
+        this.addSlot(new SlotItemHandler(blockEntity.getItemHandler(), 0, 82, 37));
 
         addPlayerInventory(inv);
         addPlayerHotbar(inv);
@@ -90,7 +90,7 @@ public class PyramidCoreMenu extends AbstractContainerMenu {
     }
 
     public int getMaxEnergy() {
-        return blockEntity.getMaxEnergy();
+        return net.nicotfpn.alientech.util.EnergyUtils.fromBits(data.get(4), data.get(5));
     }
 
     public boolean isActive() {
@@ -105,14 +105,14 @@ public class PyramidCoreMenu extends AbstractContainerMenu {
         for (int i = 0; i < PLAYER_INVENTORY_ROW_COUNT; i++) {
             for (int l = 0; l < PLAYER_INVENTORY_COLUMN_COUNT; l++) {
                 this.addSlot(new net.minecraft.world.inventory.Slot(pPlayerInventory,
-                        l + i * PLAYER_INVENTORY_COLUMN_COUNT + 9, 8 + l * 18, 84 + i * 18));
+                        l + i * PLAYER_INVENTORY_COLUMN_COUNT + 9, 10 + l * 18, 86 + i * 18));
             }
         }
     }
 
     private void addPlayerHotbar(Inventory pPlayerInventory) {
         for (int i = 0; i < HOTBAR_SLOT_COUNT; i++) {
-            this.addSlot(new net.minecraft.world.inventory.Slot(pPlayerInventory, i, 8 + i * 18, 142));
+            this.addSlot(new net.minecraft.world.inventory.Slot(pPlayerInventory, i, 10 + i * 18, 144));
         }
     }
 }

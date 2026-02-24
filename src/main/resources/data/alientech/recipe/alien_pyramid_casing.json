@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "SNS",
+    "NGN",
+    "SNS"
+  ],
+  "key": {
+    "S": { "item": "minecraft:sandstone" },
+    "N": { "item": "alientech:neutrion_ingot" },
+    "G": { "item": "alientech:inertial_stability_alloy" }
+  },
+  "result": {
+    "id": "alientech:alien_pyramid_casing",
+    "count": 4
+  }
+}
+

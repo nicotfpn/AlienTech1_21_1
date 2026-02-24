@@ -7,7 +7,6 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.level.block.state.BlockState;
@@ -60,7 +59,14 @@ public class PrimalCatalystBlockEntity extends AbstractMachineBlockEntity implem
     private static final int MAX_EXTRACT = 0;
 
     // ==================== Fuel Constants ====================
-    private static final int COAL_BLOCK_BURN_TIME = 16_000;
+    
+
+    // ==================== Entropy Buffer ====================
+    private final net.nicotfpn.alientech.entropy.EntropyStorage entropyStorage = new net.nicotfpn.alientech.entropy.EntropyStorage(
+            Config.PRIMAL_CATALYST_CAPACITY.get(), () -> {
+                setChanged();
+                markForSync();
+            });
 
     // ==================== Cached Recipe ====================
     private PrimalCatalystRecipe cachedRecipe = null;
@@ -144,12 +150,12 @@ public class PrimalCatalystBlockEntity extends AbstractMachineBlockEntity implem
     public boolean canInsert(int slot, @NotNull ItemStack stack, @Nullable Direction side) {
         if (side == null) {
             // Internal access (GUI): allow inputs and fuel, deny output
-            return slot != OUTPUT_SLOT;
+            return slot != OUTPUT_SLOT; // keep slot layout for save compatibility, but fuel slot is inert
         }
         return switch (side) {
             case UP -> slot >= INPUT_SLOT_1 && slot <= INPUT_SLOT_3;
             case DOWN -> false;
-            default -> slot == FUEL_SLOT && stack.is(Items.COAL_BLOCK);
+            default -> false; // disallow inserting fuel via automation; fuel removed
         };
     }
 
@@ -177,13 +183,13 @@ public class PrimalCatalystBlockEntity extends AbstractMachineBlockEntity implem
         if (slot == OUTPUT_SLOT)
             return false;
         if (slot == FUEL_SLOT)
-            return stack.is(Items.COAL_BLOCK);
+            return false; // Fuel slot deprecated
         return true;
     }
 
     @Override
     protected int getFuelSlot() {
-        return FUEL_SLOT;
+        return -1; // no active fuel slot
     }
 
     @Override
@@ -193,12 +199,54 @@ public class PrimalCatalystBlockEntity extends AbstractMachineBlockEntity implem
 
     @Override
     protected Predicate<ItemStack> getFuelValidator() {
-        return stack -> stack.is(Items.COAL_BLOCK);
+        return stack -> false;
     }
 
     @Override
     protected ToIntFunction<ItemStack> getBurnTimeFunction() {
-        return stack -> stack.is(Items.COAL_BLOCK) ? COAL_BLOCK_BURN_TIME : 0;
+        return stack -> 0;
+    }
+
+    // ==================== Entropy Integration ====================
+
+    @Override
+    protected net.nicotfpn.alientech.entropy.EntropyStorage getEntropyStorage() {
+        return entropyStorage;
+    }
+
+    /** Public entropy handler accessor for capability registration. */
+    public net.nicotfpn.alientech.entropy.IEntropyHandler getEntropyHandler() {
+        return entropyStorage;
+    }
+
+    @Override
+    protected int getEntropyPerTick() {
+        return getEnergyCost();
+    }
+
+    @Override
+    protected int getFEPerTick() {
+        return getEnergyCost();
+    }
+
+    @Override
+    public void saveAdditional(@NotNull net.minecraft.nbt.CompoundTag tag, @NotNull net.minecraft.core.HolderLookup.Provider provider) {
+        super.saveAdditional(tag, provider);
+        net.minecraft.nbt.CompoundTag t = new net.minecraft.nbt.CompoundTag();
+        entropyStorage.save(t);
+        tag.put("PrimalEntropy", t);
+    }
+
+    @Override
+    public void loadAdditional(@NotNull net.minecraft.nbt.CompoundTag tag, @NotNull net.minecraft.core.HolderLookup.Provider provider) {
+        super.loadAdditional(tag, provider);
+        net.minecraft.nbt.CompoundTag eTag = net.nicotfpn.alientech.util.SafeNBT.getCompound(tag, "PrimalEntropy");
+        if (eTag != null) {
+            try {
+                entropyStorage.load(eTag);
+            } catch (Exception ignored) {
+            }
+        }
     }
 
     // ==================== Recipe Cache Invalidation ====================
