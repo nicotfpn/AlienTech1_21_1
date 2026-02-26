@@ -43,11 +43,6 @@ public class ModItems {
         public static final DeferredItem<Item> EXOTIC_SUBSTRATE = ITEMS.register("exotic_substrate",
                         () -> new Item(new Item.Properties()));
 
-        public static final DeferredItem<Item> GRAVITON_CONTAINED = ITEMS.register("graviton_contained",
-                        () -> new Item(new Item.Properties()
-                                        .stacksTo(1)
-                                        .rarity(Rarity.RARE)));
-
         public static final DeferredItem<Item> HORUS_EYE = ITEMS.register("horus_eye",
                         () -> new EnergyEyeOfHorusItem(new Item.Properties()
                                         .stacksTo(1)

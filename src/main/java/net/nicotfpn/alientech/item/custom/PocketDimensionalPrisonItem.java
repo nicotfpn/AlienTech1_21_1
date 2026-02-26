@@ -69,9 +69,11 @@ public class PocketDimensionalPrisonItem extends Item {
 
             String entityName = EntityStorageUtil.getStoredEntityName(copy);
             player.displayClientMessage(
-                    Component.translatable("item.alientech.pocket_prison.captured",
-                            entityName != null ? entityName : "Unknown")
-                            .withStyle(ChatFormatting.GREEN),
+                    Component.literal("➲ ")
+                            .withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.BOLD)
+                            .append(Component.translatable("item.alientech.pocket_prison.captured",
+                                    entityName != null ? entityName : "Unknown")
+                                    .withStyle(ChatFormatting.LIGHT_PURPLE)),
                     true);
 
             return InteractionResult.SUCCESS;
@@ -116,9 +118,11 @@ public class PocketDimensionalPrisonItem extends Item {
         if (entity != null) {
             String entityName = entity.getDisplayName().getString();
             player.displayClientMessage(
-                    net.minecraft.network.chat.Component.translatable("item.alientech.pocket_prison.released",
-                            entityName != null ? entityName : "Unknown")
-                            .withStyle(net.minecraft.ChatFormatting.GREEN),
+                    Component.literal("➲ ")
+                            .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)
+                            .append(Component.translatable("item.alientech.pocket_prison.released",
+                                    entityName != null ? entityName : "Unknown")
+                                    .withStyle(ChatFormatting.YELLOW)),
                     true);
 
             // Play a sound
@@ -152,16 +156,19 @@ public class PocketDimensionalPrisonItem extends Item {
             String entityName = EntityStorageUtil.getStoredEntityName(stack);
             float health = EntityStorageUtil.getStoredHealth(stack);
 
-            tooltip.add(Component.translatable("item.alientech.pocket_prison.contains",
-                    entityName != null ? entityName : "Unknown")
-                    .withStyle(ChatFormatting.LIGHT_PURPLE));
+            tooltip.add(Component.literal("§d⛓ §7")
+                    .append(Component.translatable("item.alientech.pocket_prison.contains",
+                            Component.literal(entityName != null ? entityName : "Unknown")
+                                    .withStyle(ChatFormatting.WHITE, ChatFormatting.ITALIC))));
 
-            tooltip.add(Component.translatable("item.alientech.pocket_prison.health",
-                    String.format("%.1f", health))
-                    .withStyle(ChatFormatting.RED));
+            tooltip.add(Component.literal("§c❤ §7")
+                    .append(Component.translatable("item.alientech.pocket_prison.health",
+                            String.format("%.1f", health))
+                            .withStyle(ChatFormatting.GRAY)));
         } else {
-            tooltip.add(Component.translatable("item.alientech.pocket_prison.empty")
-                    .withStyle(ChatFormatting.GRAY));
+            tooltip.add(Component.literal("§8∅ ")
+                    .append(Component.translatable("item.alientech.pocket_prison.empty")
+                            .withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC)));
         }
     }
 

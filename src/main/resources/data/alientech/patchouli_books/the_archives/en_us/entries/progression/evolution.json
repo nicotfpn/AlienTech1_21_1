@@ -1,0 +1,36 @@
+{
+    "name": "Phase 5: Evolution",
+    "icon": "alientech:evolution_chamber",
+    "category": "alientech:progression",
+    "sortnum": 6,
+    "pages": [
+        {
+            "type": "patchouli:text",
+            "title": "The Final Frontier",
+            "text": "The ultimate goal of AlienTech: Evolution! Consume entropy to unlock powerful abilities and transcend your mortal form."
+        },
+        {
+            "type": "patchouli:crafting",
+            "title": "Evolution Chamber",
+            "recipe": "alientech:evolution_chamber",
+            "text": "The machine that transforms entropy into evolutionary progress. Requires a pyramid core, ancient battery, neutrion, and gold."
+        },
+        {
+            "type": "patchouli:crafting",
+            "title": "Ancient Charger",
+            "recipe": "alientech:ancient_charger",
+            "text": "Charges items with entropy energy. Used to power the Pharaoh Sword and Eye of Horus."
+        },
+        {
+            "type": "patchouli:crafting",
+            "title": "Pharaoh Sword",
+            "recipe": "alientech:pharaoh_sword",
+            "text": "The ultimate weapon! Charged via Ancient Charger. Deals massive damage to mobs and can teleport you to targeted entities."
+        },
+        {
+            "type": "patchouli:text",
+            "title": "Evolution Stages",
+            "text": "Evolution requires consuming vast amounts of entropy:$(br)$()Stage 1: 1000 Entropy - Night Vision$(br)$()Stage 2: 5000 Entropy - Speed Boost$(br)$()Stage 3: 15000 Entropy - Strength$(br)$()Stage 4: 50000 Entropy - Fire Resistance$(br)$()Stage 5: 150000 Entropy - Wither Immunity$(br)$()Stage 6: 500000 Entropy - Creative Flight$(br)$()Each stage grants permanent buffs!"
+        }
+    ]
+}

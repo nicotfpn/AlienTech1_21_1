@@ -5,7 +5,7 @@
     "pages": [
         {
             "type": "patchouli:text",
-            "text": "A metal so dense it generates its own microscopic gravity wells. Forged from raw neutrion blasted in ultra-high temperature furnaces."
+            "text": "A metal so dense it generates its own microscopic gravity wells. Forged from raw neutrion blasted in ultra-high temperature furnaces. $(4)CRITICAL$() for advanced pyramid construction!"
         },
         {
             "type": "patchouli:smelting",
@@ -14,6 +14,11 @@
         {
             "type": "patchouli:crafting",
             "recipe": "alientech:neutrion_block"
+        },
+        {
+            "type": "patchouli:text",
+            "title": "Pyramid Tier 2+",
+            "text": "$(5)Neutrion Blocks$() are required for $(l:patchouli:machines/pyramid_core)Pyramid Tier 2 and 3$() structures! While Tier 1 uses cheap $(gold)Gold Blocks$(), higher tiers require the denser $(5)Neutrion$() for the base layer."
         }
     ]
 }

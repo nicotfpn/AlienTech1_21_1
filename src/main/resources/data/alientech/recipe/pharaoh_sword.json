@@ -7,15 +7,9 @@
         " G "
     ],
     "key": {
-        "H": {
-            "item": "alientech:horus_eye"
-        },
-        "N": {
-            "item": "alientech:neutrion_ingot"
-        },
-        "G": {
-            "item": "minecraft:gold_block"
-        }
+        "H": { "item": "alientech:horus_eye" },
+        "N": { "item": "alientech:neutrion_ingot" },
+        "G": { "item": "minecraft:gold_ingot" }
     },
     "result": {
         "id": "alientech:pharaoh_sword",

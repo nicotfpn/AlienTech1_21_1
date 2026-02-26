@@ -10,7 +10,6 @@ import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.nicotfpn.alientech.block.entity.ModBlockEntities;
-import net.nicotfpn.alientech.block.entity.base.AlienBlockEntity;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -49,7 +48,8 @@ public class QuantumVacuumTurbineBlock extends BaseEntityBlock {
         if (level.isClientSide())
             return null;
         return createTickerHelper(type, ModBlockEntities.QUANTUM_VACUUM_TURBINE_BE.get(),
-                (lvl, pos, st, be) -> AlienBlockEntity.tickServer(lvl, pos, st, be));
+                (lvl, pos, st, be) -> net.nicotfpn.alientech.machine.core.AlienMachineBlockEntity.tickServer(lvl, pos,
+                        st, be));
     }
 
     @Override
@@ -62,5 +62,18 @@ public class QuantumVacuumTurbineBlock extends BaseEntityBlock {
             }
         }
         super.onRemove(state, level, pos, newState, moved);
+    }
+
+    @Override
+    protected net.minecraft.world.InteractionResult useWithoutItem(BlockState state, Level level,
+            BlockPos pos, net.minecraft.world.entity.player.Player player,
+            net.minecraft.world.phys.BlockHitResult hitResult) {
+        if (!level.isClientSide()) {
+            BlockEntity be = level.getBlockEntity(pos);
+            if (be instanceof QuantumVacuumTurbineBlockEntity controller) {
+                player.openMenu(controller, pos);
+            }
+        }
+        return net.minecraft.world.InteractionResult.sidedSuccess(level.isClientSide());
     }
 }

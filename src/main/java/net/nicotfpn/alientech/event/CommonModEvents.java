@@ -127,7 +127,6 @@ public class CommonModEvents {
                                 (be, context) -> be.getOutputInventory());
 
                 // === Phase 4: Entropy Reservoir ===
-                MachineCapabilities.registerMachine(event, ModBlockEntities.ENTROPY_RESERVOIR_BE.get());
                 // Entropy Reservoir - expose entropy capability for cables
                 event.registerBlockEntity(
                                 net.nicotfpn.alientech.entropy.ModCapabilities.ENTROPY,

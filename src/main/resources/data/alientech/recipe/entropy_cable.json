@@ -1,18 +1,18 @@
 {
   "type": "minecraft:crafting_shaped",
+  "category": "misc",
   "pattern": [
-    "III",
-    "RGR",
-    "III"
+    "IRI",
+    "R R",
+    "IRI"
   ],
   "key": {
     "I": { "item": "minecraft:iron_ingot" },
     "R": { "item": "minecraft:redstone" },
-    "G": { "item": "alientech:graviton" }
+    "N": { "item": "alientech:neutrion_ingot" }
   },
   "result": {
     "id": "alientech:entropy_cable",
     "count": 8
   }
 }
-

@@ -64,44 +64,63 @@ public abstract class AbstractMachineBlockEntity extends AlienBlockEntity {
     protected final ContainerData data = new ContainerData() {
         @Override
         public int get(int index) {
-            return switch (index) {
-                case 0 -> processor.getProgress();
-                case 1 -> getProcess().getProcessTime();
-                case 2 -> energy.getBurnTime();
-                case 3 -> energy.getMaxBurnTime();
-                case 4 -> net.nicotfpn.alientech.util.EnergyUtils.lowBits(energy.getEnergyStored());
-                case 5 -> net.nicotfpn.alientech.util.EnergyUtils.highBits(energy.getEnergyStored());
-                case 6 -> net.nicotfpn.alientech.util.EnergyUtils.lowBits(energy.getCapacity());
-                case 7 -> net.nicotfpn.alientech.util.EnergyUtils.highBits(energy.getCapacity());
-                // Entropy fields appended for backward compatibility
-                case 8 -> net.nicotfpn.alientech.util.EnergyUtils
-                        .lowBits(getEntropyStorage() != null ? getEntropyStorage().getEntropy() : 0);
-                case 9 -> net.nicotfpn.alientech.util.EnergyUtils
-                        .highBits(getEntropyStorage() != null ? getEntropyStorage().getEntropy() : 0);
-                case 10 -> net.nicotfpn.alientech.util.EnergyUtils
-                        .lowBits(getEntropyStorage() != null ? getEntropyStorage().getMaxEntropy() : 0);
-                case 11 -> net.nicotfpn.alientech.util.EnergyUtils
-                        .highBits(getEntropyStorage() != null ? getEntropyStorage().getMaxEntropy() : 0);
-                default -> 0;
-            };
+            return getContainerDataValue(index);
         }
 
         @Override
         public void set(int index, int value) {
-            switch (index) {
-                case 0 -> processor.setProgress(value);
-                // case 1: maxProgress is derived from getProcessTime(), not settable
-                case 2 -> energy.setBurnTime(value);
-                case 3 -> energy.setMaxBurnTime(value);
-                // case 4-7: energy is managed by MachineEnergy
-            }
+            setContainerDataValue(index, value);
         }
 
         @Override
         public int getCount() {
-            return 12;
+            return getContainerDataCount();
         }
     };
+
+    /**
+     * Get value for ContainerData. Subclasses can override and call super for
+     * indices >= 12.
+     */
+    protected int getContainerDataValue(int index) {
+        return switch (index) {
+            case 0 -> processor.getProgress();
+            case 1 -> getProcess().getProcessTime();
+            case 2 -> energy.getBurnTime();
+            case 3 -> energy.getMaxBurnTime();
+            case 4 -> net.nicotfpn.alientech.util.EnergyUtils.lowBits(energy.getEnergyStored());
+            case 5 -> net.nicotfpn.alientech.util.EnergyUtils.highBits(energy.getEnergyStored());
+            case 6 -> net.nicotfpn.alientech.util.EnergyUtils.lowBits(energy.getCapacity());
+            case 7 -> net.nicotfpn.alientech.util.EnergyUtils.highBits(energy.getCapacity());
+            case 8 -> net.nicotfpn.alientech.util.EnergyUtils
+                    .lowBits(getEntropyStorage() != null ? getEntropyStorage().getEntropy() : 0);
+            case 9 -> net.nicotfpn.alientech.util.EnergyUtils
+                    .highBits(getEntropyStorage() != null ? getEntropyStorage().getEntropy() : 0);
+            case 10 -> net.nicotfpn.alientech.util.EnergyUtils
+                    .lowBits(getEntropyStorage() != null ? getEntropyStorage().getMaxEntropy() : 0);
+            case 11 -> net.nicotfpn.alientech.util.EnergyUtils
+                    .highBits(getEntropyStorage() != null ? getEntropyStorage().getMaxEntropy() : 0);
+            default -> 0;
+        };
+    }
+
+    /**
+     * Set value for ContainerData.
+     */
+    protected void setContainerDataValue(int index, int value) {
+        switch (index) {
+            case 0 -> processor.setProgress(value);
+            case 2 -> energy.setBurnTime(value);
+            case 3 -> energy.setMaxBurnTime(value);
+        }
+    }
+
+    /**
+     * Total count of data slots. Override to add more.
+     */
+    protected int getContainerDataCount() {
+        return 12;
+    }
 
     // ==================== Constructor ====================
 
@@ -214,12 +233,16 @@ public abstract class AbstractMachineBlockEntity extends AlienBlockEntity {
         int ticksProcessed = getOrCreateTicker().tickServer(inventory, energy, processor, automation,
                 getProcess(), level, worldPosition, multiplier);
 
-        // Deduct proportional Entropy mathematically linked to true processor
+        // Deduct/Insert proportional Entropy mathematically linked to true processor
         // iterations
-        if (ticksProcessed > 0 && getEntropyPerTick() > 0) {
+        if (ticksProcessed > 0) {
             EntropyStorage storage = getEntropyStorage();
             if (storage != null) {
-                storage.extractEntropy(getEntropyPerTick() * ticksProcessed, false);
+                if (isGeneratingEntropy()) {
+                    storage.insertEntropy(getEntropyPerTick() * ticksProcessed, false);
+                } else {
+                    storage.extractEntropy(getEntropyPerTick() * ticksProcessed, false);
+                }
             }
         }
 
@@ -264,7 +287,7 @@ public abstract class AbstractMachineBlockEntity extends AlienBlockEntity {
     private MachineTicker getOrCreateTicker() {
         if (ticker == null) {
             ticker = new MachineTicker(getFuelSlot(), getFuelValidator(), getBurnTimeFunction(),
-                    getOutputSlots(), getSlotAccessRules());
+                    getOutputSlots(), getSlotAccessRules(), getEnergyPushRate(), getEnergyPullRate());
         }
         return ticker;
     }
@@ -349,6 +372,13 @@ public abstract class AbstractMachineBlockEntity extends AlienBlockEntity {
     }
 
     /**
+     * Whether this machine generates entropy (true) or consumes it (false).
+     */
+    protected boolean isGeneratingEntropy() {
+        return false;
+    }
+
+    /**
      * Entropy cost per tick for the active process. Subclasses should override
      * if they consume entropy per tick.
      */
@@ -362,6 +392,28 @@ public abstract class AbstractMachineBlockEntity extends AlienBlockEntity {
      */
     protected int getFEPerTick() {
         return 0;
+    }
+
+    /**
+     * Max FE/t pushed to neighbors. Override for generators/batteries.
+     */
+    protected int getEnergyPushRate() {
+        return 0;
+    }
+
+    /**
+     * Max FE/t pulled from neighbors. Override for consumers/batteries.
+     */
+    protected int getEnergyPullRate() {
+        return 0;
+    }
+
+    /**
+     * Expose internal energy storage for external registration (capabilities)
+     * and UI access.
+     */
+    public net.neoforged.neoforge.energy.IEnergyStorage getEnergyStorage() {
+        return energy.getStorage();
     }
 
     /**

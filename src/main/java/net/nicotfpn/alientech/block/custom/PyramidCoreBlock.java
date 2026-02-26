@@ -121,10 +121,10 @@ public class PyramidCoreBlock extends Block implements EntityBlock {
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state,
             BlockEntityType<T> type) {
-        if (level.isClientSide()) {
-            return null;
-        }
-        return createTickerHelper(type, ModBlockEntities.PYRAMID_CORE_BE.get(), PyramidCoreBlockEntity::tick);
+        return createTickerHelper(type, ModBlockEntities.PYRAMID_CORE_BE.get(),
+                level.isClientSide()
+                        ? net.nicotfpn.alientech.block.entity.base.AlienBlockEntity::tickClient
+                        : net.nicotfpn.alientech.block.entity.base.AlienBlockEntity::tickServer);
     }
 
     @Nullable

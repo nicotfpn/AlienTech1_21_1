@@ -1,0 +1,41 @@
+{
+    "name": "Phase 3: The Catalyst",
+    "icon": "alientech:primal_catalyst",
+    "category": "alientech:progression",
+    "sortnum": 4,
+    "pages": [
+        {
+            "type": "patchouli:text",
+            "title": "Primal Catalyst",
+            "text": "The Primal Catalyst is a machine that consumes entropy to create advanced materials. It requires an active entropy network to function."
+        },
+        {
+            "type": "patchouli:crafting",
+            "title": "Crafting the Catalyst",
+            "recipe": "alientech:primal_catalyst",
+            "text": "Requires Copper, Furnace, Lapis, Gold, and Blaze Rod. Place it connected to your entropy network."
+        },
+        {
+            "type": "patchouli:crafting",
+            "title": "Concentrated Substrate",
+            "recipe": "alientech:concentrated_substrate",
+            "text": "Basic catalyst input. Crafted from Exotic Substrate and Sand."
+        },
+        {
+            "type": "patchouli:text",
+            "title": "Graviton",
+            "text": "Graviton is a LATE-GAME material crafted from:$(br)- Phantom Membrane$(br)- Nether Star$(br)- Diamond$(br)- Neutrion Ingot$(br)$()Output: 2 Gravitons per craft"
+        },
+        {
+            "type": "patchouli:crafting",
+            "title": "Inertial Stability Alloy",
+            "recipe": "alientech:primal_catalyst/inertial_stability_alloy",
+            "text": "CRITICAL material for pyramid upgrades! Requires:$(br)- 2x Graviton$(br)- 200 Entropy$(br)$()This is processed in the Primal Catalyst."
+        },
+        {
+            "type": "patchouli:text",
+            "title": "Entropy Consumption",
+            "text": "The catalyst consumes entropy directly from your network reservoir. Different recipes have different costs:$(br)- Concentrated Substrate: 20 Entropy$(br)- ISA: 200 Entropy$(br)$()Ensure your pyramid is active and reservoir has enough entropy!"
+        }
+    ]
+}

@@ -1,0 +1,30 @@
+{
+    "name": "Phase 4: Energy Conversion",
+    "icon": "alientech:quantum_vacuum_turbine",
+    "category": "alientech:progression",
+    "sortnum": 5,
+    "pages": [
+        {
+            "type": "patchouli:text",
+            "title": "Forge Energy Conversion",
+            "text": "The Quantum Vacuum Turbine converts entropy into standard Forge Energy (FE). This allows you to power other mods' machines!"
+        },
+        {
+            "type": "patchouli:crafting",
+            "title": "Quantum Vacuum Turbine",
+            "recipe": "alientech:quantum_vacuum_turbine",
+            "text": "The ultimate power generation machine. Connects to your entropy network. Requires Neutrion Ingot, Gold, Blast Furnace, Observer, and Diamond."
+        },
+        {
+            "type": "patchouli:crafting",
+            "title": "Ancient Battery",
+            "recipe": "alientech:ancient_battery",
+            "text": "Stores Forge Energy. Can hold up to 1M FE. Output: 1024 FE/tick. Use with machines that require FE input."
+        },
+        {
+            "type": "patchouli:text",
+            "title": "FE Generation Stats",
+            "text": "Turbine conversion rates:$(br)- 1 Entropy = 10 FE$(br)- Processing time: 200 ticks$(br)- Output: 256 FE/tick$(br)$()For maximum output, upgrade your pyramid tier to increase entropy generation!"
+        }
+    ]
+}

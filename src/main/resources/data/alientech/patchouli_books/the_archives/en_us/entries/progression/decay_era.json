@@ -1,0 +1,36 @@
+{
+    "name": "Phase 0: Decay Era",
+    "icon": "alientech:pocket_dimensional_prison",
+    "category": "alientech:progression",
+    "sortnum": 1,
+    "pages": [
+        {
+            "type": "patchouli:text",
+            "title": "The Beginning",
+            "text": "The path to cosmic power begins with the fundamental force of the universe: $(alien)Entropy$(). This is the energy released when living things decay.$()$(br)$()To begin, you must capture the life force of mobs and accelerate their decay artificially."
+        },
+        {
+            "type": "patchouli:crafting",
+            "title": "Pocket Dimensional Prison",
+            "recipe": "alientech:pocket_dimensional_prison",
+            "text": "This item can capture any living entity (except players and armor stands). Right-click on a mob to trap it. The entity is stored with all its NBT data."
+        },
+        {
+            "type": "patchouli:crafting",
+            "title": "Decay Chamber Controller",
+            "recipe": "alientech:decay_chamber_controller",
+            "text": "The brain of the Decay Chamber. Without this, nothing happens."
+        },
+        {
+            "type": "patchouli:crafting",
+            "title": "Decay Chamber Blocks",
+            "recipe": "alientech:decay_chamber",
+            "text": "Build a 2-block high pillar of these above the controller to complete the multiblock structure."
+        },
+        {
+            "type": "patchouli:text",
+            "title": "How Decay Works",
+            "text": "Place a captured entity in the Decay Chamber. The chamber will slowly extract entropy from the entity over time.$(br)$()Normal mobs: 2000 ticks to fully decay$(br)$()Boss mobs: 12000 ticks (6x longer)$()$(br)$()Output: $(item)Entropy Biomass$() - the foundation of all AlienTech power."
+        }
+    ]
+}

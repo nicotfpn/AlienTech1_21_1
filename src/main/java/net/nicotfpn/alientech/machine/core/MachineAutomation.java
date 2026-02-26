@@ -22,8 +22,9 @@ public class MachineAutomation {
 
     private static final int AUTO_PUSH_INTERVAL = 10;
     private final Map<Direction, IItemHandler> sidedCache = new EnumMap<>(Direction.class);
-    // NeoForge 1.21.1 Native Capability Caching Array Map
     private final Map<Direction, net.neoforged.neoforge.capabilities.BlockCapabilityCache<IItemHandler, @Nullable Direction>> autoPushCache = new EnumMap<>(
+            Direction.class);
+    private final Map<Direction, net.neoforged.neoforge.capabilities.BlockCapabilityCache<net.neoforged.neoforge.energy.IEnergyStorage, @Nullable Direction>> energyPushCache = new EnumMap<>(
             Direction.class);
 
     // ==================== Sided Handler Access ====================
@@ -49,6 +50,7 @@ public class MachineAutomation {
     public void invalidateCache() {
         sidedCache.clear();
         autoPushCache.clear();
+        energyPushCache.clear();
     }
 
     // ==================== Auto-Push Outputs ====================
@@ -113,6 +115,99 @@ public class MachineAutomation {
                     outputStack = inventory.getHandler().getStackInSlot(outputSlot);
                     if (outputStack.isEmpty())
                         break;
+                }
+            }
+        }
+    }
+
+    /**
+     * Periodically push energy to adjacent energy storages.
+     *
+     * @param level       the server level
+     * @param pos         the machine's block position
+     * @param energy      the machine's energy module
+     * @param maxTransfer max energy to push per tick
+     */
+    public void autoPushEnergy(Level level, BlockPos pos, MachineEnergy energy, int maxTransfer) {
+        if (level.isClientSide() || maxTransfer <= 0 || energy.getEnergyStored() <= 0)
+            return;
+
+        // Distribute load
+        if ((level.getGameTime() + pos.asLong()) % AUTO_PUSH_INTERVAL != 0)
+            return;
+
+        int toPushTotal = Math.min(energy.getEnergyStored(), maxTransfer * AUTO_PUSH_INTERVAL); // Account for interval
+
+        for (Direction direction : Direction.values()) {
+            if (toPushTotal <= 0)
+                break;
+
+            net.neoforged.neoforge.capabilities.BlockCapabilityCache<net.neoforged.neoforge.energy.IEnergyStorage, @Nullable Direction> cache = energyPushCache
+                    .get(direction);
+            if (cache == null) {
+                if (level instanceof net.minecraft.server.level.ServerLevel serverLvl) {
+                    cache = net.neoforged.neoforge.capabilities.BlockCapabilityCache.create(
+                            Capabilities.EnergyStorage.BLOCK, serverLvl, pos.relative(direction),
+                            direction.getOpposite());
+                    energyPushCache.put(direction, cache);
+                } else {
+                    continue;
+                }
+            }
+
+            net.neoforged.neoforge.energy.IEnergyStorage adjacent = cache.getCapability();
+            if (adjacent != null && adjacent.canReceive()) {
+                int pushed = adjacent.receiveEnergy(toPushTotal, false);
+                if (pushed > 0) {
+                    energy.getEnergyStorage().extractEnergy(pushed, false);
+                    toPushTotal -= pushed;
+                }
+            }
+        }
+    }
+
+    /**
+     * Periodically pull energy from adjacent energy storages.
+     *
+     * @param level       the server level
+     * @param pos         the machine's block position
+     * @param energy      the machine's energy module
+     * @param maxTransfer max energy to pull per tick
+     */
+    public void autoPullEnergy(Level level, BlockPos pos, MachineEnergy energy, int maxTransfer) {
+        if (level.isClientSide() || maxTransfer <= 0 || energy.getEnergyStored() >= energy.getCapacity())
+            return;
+
+        // Distribute load
+        if ((level.getGameTime() + pos.asLong()) % AUTO_PUSH_INTERVAL != 0)
+            return;
+
+        int space = energy.getCapacity() - energy.getEnergyStored();
+        int toPullTotal = Math.min(space, maxTransfer * AUTO_PUSH_INTERVAL);
+
+        for (Direction direction : Direction.values()) {
+            if (toPullTotal <= 0)
+                break;
+
+            net.neoforged.neoforge.capabilities.BlockCapabilityCache<net.neoforged.neoforge.energy.IEnergyStorage, @Nullable Direction> cache = energyPushCache
+                    .get(direction);
+            if (cache == null) {
+                if (level instanceof net.minecraft.server.level.ServerLevel serverLvl) {
+                    cache = net.neoforged.neoforge.capabilities.BlockCapabilityCache.create(
+                            Capabilities.EnergyStorage.BLOCK, serverLvl, pos.relative(direction),
+                            direction.getOpposite());
+                    energyPushCache.put(direction, cache);
+                } else {
+                    continue;
+                }
+            }
+
+            net.neoforged.neoforge.energy.IEnergyStorage adjacent = cache.getCapability();
+            if (adjacent != null && adjacent.canExtract()) {
+                int pulled = adjacent.extractEnergy(toPullTotal, false);
+                if (pulled > 0) {
+                    energy.getEnergyStorage().receiveEnergy(pulled, false);
+                    toPullTotal -= pulled;
                 }
             }
         }

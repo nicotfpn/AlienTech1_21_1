@@ -2,17 +2,13 @@
     "type": "minecraft:crafting_shaped",
     "category": "misc",
     "pattern": [
-        " G ",
-        "GDG",
-        " G "
+        " S ",
+        "SBS",
+        " S "
     ],
     "key": {
-        "G": {
-            "item": "minecraft:glass"
-        },
-        "D": {
-            "item": "minecraft:diamond"
-        }
+        "S": { "item": "minecraft:slime_ball" },
+        "B": { "item": "minecraft:water_bucket" }
     },
     "result": {
         "id": "alientech:rainbow_captured",

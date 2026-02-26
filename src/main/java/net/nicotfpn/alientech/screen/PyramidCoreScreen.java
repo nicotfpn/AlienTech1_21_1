@@ -11,17 +11,21 @@ import net.nicotfpn.alientech.AlienTech;
 
 import java.text.NumberFormat;
 import java.util.List;
-import java.util.Locale;
 
 public class PyramidCoreScreen extends AbstractContainerScreen<PyramidCoreMenu> {
     private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(AlienTech.MOD_ID,
             "textures/gui/pyramid_core_gui.png");
 
-    // Vertical energy bar on the left (standardized)
-    private static final int ENERGY_BAR_X = 8;
-    private static final int ENERGY_BAR_Y = 14;
-    private static final int ENERGY_BAR_WIDTH = 14;
-    private static final int ENERGY_BAR_HEIGHT = 60;
+    // ==================== GUI Element Positions (from alientech_gui_gen.py V9)
+    // ====================
+    private static final int BAR_TOP = 17;
+    private static final int BAR_HEIGHT = 52;
+    private static final int BAR_WIDTH = 8;
+
+    private static final int ENTROPY_X = 8;
+
+    // Zone 2 UVs
+    private static final int UV_ENT_U = 176;
 
     public PyramidCoreScreen(PyramidCoreMenu pMenu, Inventory pPlayerInventory, Component pTitle) {
         super(pMenu, pPlayerInventory, pTitle);
@@ -32,8 +36,9 @@ public class PyramidCoreScreen extends AbstractContainerScreen<PyramidCoreMenu> 
         super.init();
         this.imageWidth = 176;
         this.imageHeight = 166;
-        this.inventoryLabelY = 10000;
-        this.titleLabelY = 10000;
+        this.titleLabelX = (this.imageWidth - this.font.width(this.title)) / 2;
+        this.titleLabelY = 6;
+        this.inventoryLabelY = 72;
     }
 
     @Override
@@ -43,28 +48,24 @@ public class PyramidCoreScreen extends AbstractContainerScreen<PyramidCoreMenu> 
         int x = (width - imageWidth) / 2;
         int y = (height - imageHeight) / 2;
 
-        guiGraphics.blit(TEXTURE, x, y, 0, 0, imageWidth, imageHeight, 256, 256);
+        // Layer 1: Background
+        guiGraphics.blit(TEXTURE, x, y, 0, 0, imageWidth, imageHeight);
 
-        // Render vertical energy bar (standardized with other blocks)
-        renderEnergyBar(guiGraphics, x, y);
+        // Layer 2: Entropy bar fill (Zone 2)
+        renderEntropyBar(guiGraphics, x, y);
     }
 
-    /**
-     * Renders vertical energy bar that fills from bottom to top (STANDARDIZED).
-     */
-    private void renderEnergyBar(GuiGraphics guiGraphics, int x, int y) {
-        int barX = x + ENERGY_BAR_X;
-        int barY = y + ENERGY_BAR_Y;
-
-        long energy = menu.getEnergyStored();
-        long maxEnergy = menu.getMaxEnergy();
-
-        int scaledEnergy = (int) (ENERGY_BAR_HEIGHT * energy / Math.max(1, maxEnergy));
-        if (scaledEnergy > 0) {
-            // Draw from bottom up
-            int fillY = barY + ENERGY_BAR_HEIGHT - scaledEnergy;
-            guiGraphics.blit(TEXTURE, barX, fillY, 176, 14 + (ENERGY_BAR_HEIGHT - scaledEnergy),
-                    ENERGY_BAR_WIDTH, scaledEnergy, 256, 256);
+    private void renderEntropyBar(GuiGraphics guiGraphics, int x, int y) {
+        int entropy = menu.getEntropy();
+        int maxEntropy = menu.getMaxEntropy();
+        if (maxEntropy > 0) {
+            int fill = (int) ((float) entropy / maxEntropy * BAR_HEIGHT);
+            if (fill > 0) {
+                guiGraphics.blit(TEXTURE,
+                        x + ENTROPY_X, y + BAR_TOP + (BAR_HEIGHT - fill),
+                        UV_ENT_U, BAR_HEIGHT - fill,
+                        BAR_WIDTH, fill);
+            }
         }
     }
 
@@ -73,50 +74,31 @@ public class PyramidCoreScreen extends AbstractContainerScreen<PyramidCoreMenu> 
         renderBackground(guiGraphics, mouseX, mouseY, delta);
         super.render(guiGraphics, mouseX, mouseY, delta);
         renderTooltip(guiGraphics, mouseX, mouseY);
-        renderEnergyTooltip(guiGraphics, mouseX, mouseY);
+        renderEntropyTooltip(guiGraphics, mouseX, mouseY);
     }
 
-    /**
-     * Renders tooltip when hovering over energy bar.
-     */
-    private void renderEnergyTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void renderEntropyTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         int x = (width - imageWidth) / 2;
         int y = (height - imageHeight) / 2;
+        int relX = mouseX - x;
+        int relY = mouseY - y;
 
-        int barX = x + ENERGY_BAR_X;
-        int barY = y + ENERGY_BAR_Y;
-
-        if (mouseX >= barX && mouseX < barX + ENERGY_BAR_WIDTH &&
-                mouseY >= barY && mouseY < barY + ENERGY_BAR_HEIGHT) {
-
-            long stored = menu.getEnergyStored();
-            long max = menu.getMaxEnergy();
-
-            NumberFormat formatter = NumberFormat.getInstance(Locale.US);
-            String energyText = formatter.format(stored) + " / " + formatter.format(max) + " FE";
-            float percentage = max > 0 ? (float) stored / max * 100 : 0;
-
-            String statusText = menu.isActive() ? "§aActive" : "§cInactive";
-            // Assuming generation rate is constant in config, or we could sync it.
-            // For now, let's show the potential max generation if active.
-            String generationText = menu.isActive()
-                    ? "§a+" + formatter.format(net.nicotfpn.alientech.Config.PYRAMID_CORE_GENERATION.get()) + " FE/t"
-                    : "§70 FE/t";
-
+        // Entropy tooltip (8-16, 17-69)
+        if (relX >= ENTROPY_X && relX < ENTROPY_X + BAR_WIDTH && relY >= BAR_TOP && relY < BAR_TOP + BAR_HEIGHT) {
+            NumberFormat format = NumberFormat.getInstance();
+            String entropyText = format.format(menu.getEntropy()) + " / " + format.format(menu.getMaxEntropy()) + " EN";
             guiGraphics.renderComponentTooltip(this.font, List.of(
-                    Component.literal("§6§lPyramid Core"),
-                    Component.literal("§7Stored: §e" + energyText),
-                    Component.literal("§7Capacity: §b" + String.format("%.1f%%", percentage)),
-                    Component.literal(""),
-                    Component.literal("§7Status: " + statusText),
-                    Component.literal("§7Generation: " + generationText)), mouseX, mouseY);
+                    Component.literal("§cEntropy Buffer"),
+                    Component.literal("§4" + entropyText)), mouseX, mouseY);
         }
+
+        // Note: Pyramid Core Energy tooltip removed as per V9 sidebar spec (Entropy
+        // only)
     }
 
     @Override
     protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        // Title in gold
-        int titleX = (imageWidth - font.width(title)) / 2;
-        guiGraphics.drawString(font, title, titleX, 5, 0xD4AF37, false);
+        guiGraphics.drawString(font, title, titleLabelX, titleLabelY, 0x404040, false);
+        guiGraphics.drawString(font, playerInventoryTitle, 8, inventoryLabelY, 0x404040, false);
     }
 }

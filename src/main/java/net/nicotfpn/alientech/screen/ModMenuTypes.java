@@ -27,6 +27,14 @@ public class ModMenuTypes {
         public static final DeferredHolder<MenuType<?>, MenuType<DecayChamberMenu>> DECAY_CHAMBER_MENU = MENUS
                         .register("decay_chamber_menu", () -> IMenuTypeExtension.create(DecayChamberMenu::new));
 
+        public static final DeferredHolder<MenuType<?>, MenuType<net.nicotfpn.alientech.screen.QuantumVacuumTurbineMenu>> QUANTUM_VACUUM_TURBINE_MENU = MENUS
+                        .register("quantum_vacuum_turbine_menu", () -> IMenuTypeExtension
+                                        .create(net.nicotfpn.alientech.screen.QuantumVacuumTurbineMenu::new));
+
+        public static final DeferredHolder<MenuType<?>, MenuType<net.nicotfpn.alientech.screen.EntropyReservoirMenu>> ENTROPY_RESERVOIR_MENU = MENUS
+                        .register("entropy_reservoir_menu", () -> IMenuTypeExtension
+                                        .create(net.nicotfpn.alientech.screen.EntropyReservoirMenu::new));
+
         public static void register(IEventBus eventBus) {
                 MENUS.register(eventBus);
         }

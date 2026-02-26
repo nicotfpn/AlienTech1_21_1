@@ -1,18 +1,19 @@
 {
   "type": "minecraft:crafting_shaped",
+  "category": "misc",
   "pattern": [
-    "GGG",
-    "BEB",
-    "GGG"
+    "GBG",
+    "BNB",
+    "WWW"
   ],
   "key": {
-    "G": { "item": "alientech:inertial_stability_alloy" },
-    "B": { "item": "minecraft:glass" },
-    "E": { "item": "alientech:entropy_biomass" }
+    "G": { "item": "minecraft:gold_ingot" },
+    "B": { "item": "minecraft:bucket" },
+    "N": { "item": "alientech:neutrion_ingot" },
+    "W": { "item": "minecraft:water_bucket" }
   },
   "result": {
     "id": "alientech:entropy_reservoir",
     "count": 1
   }
 }
-

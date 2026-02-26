@@ -27,20 +27,24 @@ public class DecayChamberScreen extends AbstractContainerScreen<DecayChamberMenu
     private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(
             AlienTech.MOD_ID, "textures/gui/decay_chamber_gui.png");
 
-    // ==================== GUI Element Positions (from create_decay_chamber_gui.py)
+    // ==================== GUI Element Positions (from alientech_gui_gen.py V9)
     // ====================
-    // Energy bar (vertical, left side)
-    private static final int ENERGY_X = 9;
-    private static final int ENERGY_Y = 8;
-    private static final int ENERGY_W = 16;
-    private static final int ENERGY_H = 44;
-    // energy atlas UV → (176, 0) 16×44
+    private static final int BAR_TOP = 17;
+    private static final int BAR_HEIGHT = 52;
+    private static final int BAR_WIDTH = 8;
 
-    // Progress bar (horizontal)
-    private static final int PROGRESS_X = 80;
-    private static final int PROGRESS_Y = 36;
-    private static final int PROGRESS_H = 10;
-    // progress atlas UV → (176, 46) 34×10
+    private static final int ENTROPY_X = 8;
+    private static final int FE_X = 19;
+
+    private static final int PROGRESS_X = 88;
+    private static final int PROGRESS_Y = 42;
+    private static final int PROGRESS_H = 16;
+
+    // Zone 2 UVs
+    private static final int UV_ENT_U = 176;
+    private static final int UV_FE_U = 186;
+    private static final int UV_PROG_U = 176;
+    private static final int UV_PROG_V = 54;
 
     public DecayChamberScreen(DecayChamberMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -51,9 +55,9 @@ public class DecayChamberScreen extends AbstractContainerScreen<DecayChamberMenu
         super.init();
         this.imageWidth = 176;
         this.imageHeight = 166;
-        // Hide default labels
-        this.inventoryLabelY = 10000;
-        this.titleLabelY = 10000;
+        this.titleLabelX = (this.imageWidth - this.font.width(this.title)) / 2;
+        this.titleLabelY = 6;
+        this.inventoryLabelY = 72;
     }
 
     @Override
@@ -64,47 +68,56 @@ public class DecayChamberScreen extends AbstractContainerScreen<DecayChamberMenu
         int x = (width - imageWidth) / 2;
         int y = (height - imageHeight) / 2;
 
-        // Main GUI background
-        guiGraphics.blit(TEXTURE, x, y, 0, 0, imageWidth, imageHeight, 256, 256);
+        // Layer 1: Main GUI background (Zone 1)
+        guiGraphics.blit(TEXTURE, x, y, 0, 0, imageWidth, imageHeight);
 
-        // Energy bar (fills from bottom to top)
+        // Layer 2: Entropy bar fill (Zone 2)
+        renderEntropyBar(guiGraphics, x, y);
+
+        // Layer 3: FE bar fill (Zone 2)
         renderEnergyBar(guiGraphics, x, y);
 
-        // Progress bar (fills from left to right)
+        // Layer 4: Progress arrow (Zone 2)
         renderProgressBar(guiGraphics, x, y);
     }
 
-    /**
-     * Renders the energy bar. Fills from bottom to top based on stored entropy.
-     * Source texture: (176, 0) in the atlas.
-     */
-    private void renderEnergyBar(GuiGraphics guiGraphics, int x, int y) {
-        int scaled = menu.getScaledEnergy();
-        if (scaled > 0) {
-            // Draw from bottom up
-            guiGraphics.blit(TEXTURE,
-                    x + ENERGY_X,
-                    y + ENERGY_Y + (ENERGY_H - scaled),
-                    176,
-                    0 + (ENERGY_H - scaled),
-                    ENERGY_W,
-                    scaled,
-                    256, 256);
+    private void renderEntropyBar(GuiGraphics guiGraphics, int x, int y) {
+        int entropy = (int) menu.getEntropy();
+        int maxEntropy = (int) menu.getMaxEntropy();
+        if (maxEntropy > 0) {
+            int fill = (int) ((float) entropy / maxEntropy * BAR_HEIGHT);
+            if (fill > 0) {
+                guiGraphics.blit(TEXTURE,
+                        x + ENTROPY_X, y + BAR_TOP + (BAR_HEIGHT - fill),
+                        UV_ENT_U, BAR_HEIGHT - fill,
+                        BAR_WIDTH, fill);
+            }
         }
     }
 
-    /**
-     * Renders the progress bar. Fills from left to right.
-     * Source texture: (176, 46) in the atlas.
-     */
+    private void renderEnergyBar(GuiGraphics guiGraphics, int x, int y) {
+        int energy = menu.getEnergy();
+        int maxEnergy = menu.getMaxEnergy();
+        if (maxEnergy > 0) {
+            int fill = (int) ((float) energy / maxEnergy * BAR_HEIGHT);
+            if (fill > 0) {
+                guiGraphics.blit(TEXTURE,
+                        x + FE_X, y + BAR_TOP + (BAR_HEIGHT - fill),
+                        UV_FE_U, BAR_HEIGHT - fill,
+                        BAR_WIDTH, fill);
+            }
+        }
+    }
+
     private void renderProgressBar(GuiGraphics guiGraphics, int x, int y) {
         if (menu.isCrafting()) {
-            int progress = menu.getScaledProgress();
-            guiGraphics.blit(TEXTURE,
-                    x + PROGRESS_X, y + PROGRESS_Y,
-                    176, 46,
-                    progress, PROGRESS_H,
-                    256, 256);
+            int progress = menu.getScaledProgress(); // Assumed to return 0-24
+            if (progress > 0) {
+                guiGraphics.blit(TEXTURE,
+                        x + PROGRESS_X, y + PROGRESS_Y,
+                        UV_PROG_U, UV_PROG_V,
+                        progress, PROGRESS_H);
+            }
         }
     }
 
@@ -114,36 +127,37 @@ public class DecayChamberScreen extends AbstractContainerScreen<DecayChamberMenu
         super.render(guiGraphics, mouseX, mouseY, delta);
         renderTooltip(guiGraphics, mouseX, mouseY);
 
-        // Energy tooltip
         renderEnergyTooltip(guiGraphics, mouseX, mouseY);
     }
 
-    /**
-     * Renders tooltip when hovering over the energy bar.
-     */
     private void renderEnergyTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         int x = (width - imageWidth) / 2;
         int y = (height - imageHeight) / 2;
+        int relX = mouseX - x;
+        int relY = mouseY - y;
 
-        int barX = x + ENERGY_X;
-        int barY = y + ENERGY_Y;
-
-        if (mouseX >= barX && mouseX < barX + ENERGY_W &&
-                mouseY >= barY && mouseY < barY + ENERGY_H) {
-
+        // Entropy tooltip (Entropy bar area: 8-16, 17-69)
+        if (relX >= ENTROPY_X && relX < ENTROPY_X + BAR_WIDTH && relY >= BAR_TOP && relY < BAR_TOP + BAR_HEIGHT) {
             NumberFormat format = NumberFormat.getInstance();
-            String entropyText = format.format(menu.getEntropy()) + " / " + format.format(menu.getMaxEntropy()) + " EP";
-
+            String entropyText = format.format(menu.getEntropy()) + " / " + format.format(menu.getMaxEntropy()) + " EN";
             guiGraphics.renderComponentTooltip(this.font, List.of(
-                    Component.literal("§5Entropy"),
-                    Component.literal("§d" + entropyText)), mouseX, mouseY);
+                    Component.literal("§cEntropy"),
+                    Component.literal("§4" + entropyText)), mouseX, mouseY);
+        }
+
+        // Energy tooltip (FE bar area: 19-27, 17-69)
+        if (relX >= FE_X && relX < FE_X + BAR_WIDTH && relY >= BAR_TOP && relY < BAR_TOP + BAR_HEIGHT) {
+            NumberFormat format = NumberFormat.getInstance();
+            String energyText = format.format(menu.getEnergy()) + " / " + format.format(menu.getMaxEnergy()) + " FE";
+            guiGraphics.renderComponentTooltip(this.font, List.of(
+                    Component.literal("§6Energy"),
+                    Component.literal("§e" + energyText)), mouseX, mouseY);
         }
     }
 
     @Override
     protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        // Render title in dark purple at top center
-        int titleX = (imageWidth - font.width(title)) / 2;
-        guiGraphics.drawString(font, title, titleX, 5, 0x8B008B, false);
+        guiGraphics.drawString(font, title, titleLabelX, titleLabelY, 0x404040, false);
+        guiGraphics.drawString(font, playerInventoryTitle, 8, inventoryLabelY, 0x404040, false);
     }
 }

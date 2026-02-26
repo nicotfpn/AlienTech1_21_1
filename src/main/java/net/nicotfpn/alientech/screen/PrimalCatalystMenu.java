@@ -51,17 +51,16 @@ public class PrimalCatalystMenu extends AbstractContainerMenu {
         blockEntity = (PrimalCatalystBlockEntity) entity;
         this.data = data;
 
-        // Input slots: vertical column (from mc_gui_generator.py: draw at 56,14 / 56,34
-        // / 56,54 -> item pos +1)
-        this.addSlot(new SlotItemHandler(blockEntity.getInventory().getHandler(), 0, 58, 16)); // Input 1
-        this.addSlot(new SlotItemHandler(blockEntity.getInventory().getHandler(), 1, 58, 36)); // Input 2
-        this.addSlot(new SlotItemHandler(blockEntity.getInventory().getHandler(), 2, 58, 56)); // Input 3
+        // Input slots: vertical column (from alientech_gui_gen.py: x=66, y=23/41/59)
+        this.addSlot(new SlotItemHandler(blockEntity.getInventory().getHandler(), 0, 66, 23)); // Input 1
+        this.addSlot(new SlotItemHandler(blockEntity.getInventory().getHandler(), 1, 66, 41)); // Input 2
+        this.addSlot(new SlotItemHandler(blockEntity.getInventory().getHandler(), 2, 66, 59)); // Input 3
 
-        // Fuel slot: under energy bar (draw at 8,54 -> item pos +1)
+        // Fuel slot: under energy bar (from alientech_gui_gen.py: positioned near entropy bar)
         this.addSlot(new FuelSlot(blockEntity.getInventory().getHandler(), 3, 10, 56));
 
-        // Output slot: right side (draw at 120,33 -> item pos +1)
-        this.addSlot(new OutputSlot(blockEntity.getInventory().getHandler(), 4, 122, 35));
+        // Output slot: right side (from alientech_gui_gen.py: x=116, y=41)
+        this.addSlot(new OutputSlot(blockEntity.getInventory().getHandler(), 4, 116, 41));
 
         // Sync all data values (extended)
         addDataSlots(data);
@@ -80,7 +79,7 @@ public class PrimalCatalystMenu extends AbstractContainerMenu {
     public int getScaledProgress() {
         int progress = data.get(0);
         int maxProgress = data.get(1);
-        int barWidth = 34; // pixel width of progress bar (from mc_gui_generator.py)
+        int barWidth = 24; // pixel width of progress arrow (from alientech_gui_gen.py)
         return maxProgress != 0 && progress != 0 ? progress * barWidth / maxProgress : 0;
     }
 
@@ -164,14 +163,14 @@ public class PrimalCatalystMenu extends AbstractContainerMenu {
     private void addPlayerInventory(Inventory playerInventory) {
         for (int i = 0; i < 3; ++i) {
             for (int l = 0; l < 9; ++l) {
-                this.addSlot(new Slot(playerInventory, l + i * 9 + 9, 10 + l * 18, 86 + i * 18));
+                this.addSlot(new Slot(playerInventory, l + i * 9 + 9, 8 + l * 18, 84 + i * 18));
             }
         }
     }
 
     private void addPlayerHotbar(Inventory playerInventory) {
         for (int i = 0; i < 9; ++i) {
-            this.addSlot(new Slot(playerInventory, i, 10 + i * 18, 144));
+            this.addSlot(new Slot(playerInventory, i, 8 + i * 18, 142));
         }
     }
 

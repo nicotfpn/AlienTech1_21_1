@@ -1,24 +1,20 @@
 {
   "type": "minecraft:crafting_shaped",
   "category": "misc",
-  "key": {
-    "A": {
-      "item": "alientech:concentrated_substrate"
-    },
-    "B": {
-      "item": "alientech:neutrion_ingot"
-    },
-    "C": {
-      "item": "alientech:gravion_disk"
-    }
-  },
   "pattern": [
-    "ACA",
-    "CBC",
-    "ACA"
+    "CFC",
+    "LGB",
+    "CFC"
   ],
+  "key": {
+    "C": { "item": "minecraft:copper_ingot" },
+    "F": { "item": "minecraft:furnace" },
+    "L": { "item": "minecraft:lapis_lazuli" },
+    "G": { "item": "minecraft:gold_ingot" },
+    "B": { "item": "minecraft:blaze_rod" }
+  },
   "result": {
-    "count": 1,
-    "id": "alientech:primal_catalyst"
+    "id": "alientech:primal_catalyst",
+    "count": 1
   }
 }

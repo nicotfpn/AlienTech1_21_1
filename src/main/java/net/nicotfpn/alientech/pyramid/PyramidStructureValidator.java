@@ -32,8 +32,13 @@ public final class PyramidStructureValidator {
 
     /**
      * Validate the pyramid structure and return the highest achieved tier.
-     * Checks tiers bottom-up: gold base first, then expanding casing layers.
-     * Returns the highest complete tier (NONE if gold base fails).
+     * Checks tiers bottom-up: base layer first, then expanding casing layers.
+     * Returns the highest complete tier (NONE if base fails).
+     *
+     * Structure:
+     * - Tier 1: Gold base (3x3) + 5x5 Alien Pyramid Casing
+     * - Tier 2: Neutrion Block base (3x3) + 7x7 Alien Pyramid Casing  
+     * - Tier 3: Neutrion Block base (3x3) + 9x9 Alien Pyramid Casing
      *
      * @param level   the world
      * @param corePos position of the Pyramid Core block
@@ -43,28 +48,38 @@ public final class PyramidStructureValidator {
         if (level == null)
             return PyramidTier.NONE;
 
-        // Gold base is always required (layer -1: 3×3)
+        Block neutrionBlock = ModBlocks.NEUTRION_BLOCK.get();
+        
+        // First, check for Tier 2+ base (Neutrion Blocks) - more valuable
+        // Check 7x7 first to determine if it's Tier 2 or 3
+        Block casing = ModBlocks.ALIEN_PYRAMID_CASING.get();
+        
+        // Check Tier 2/3 base: 3x3 Neutrion Blocks
+        boolean hasNeutrionBase = checkLayer(level, corePos, -1, 1, neutrionBlock);
+        
+        if (hasNeutrionBase) {
+            // Tier 2: 7x7 casing at layer -3
+            if (!checkLayer(level, corePos, -3, 3, casing)) {
+                return PyramidTier.TIER_2;
+            }
+            // Tier 3: 9x9 casing at layer -4
+            if (!checkLayer(level, corePos, -4, 4, casing)) {
+                return PyramidTier.TIER_2;
+            }
+            return PyramidTier.TIER_3;
+        }
+        
+        // Check for Tier 1: Gold base (3x3) - cheaper alternative
         if (!checkLayer(level, corePos, -1, 1, Blocks.GOLD_BLOCK)) {
             return PyramidTier.NONE;
         }
 
         // Tier 1: 5×5 casing at layer -2
-        Block casing = ModBlocks.ALIEN_PYRAMID_CASING.get();
         if (!checkLayer(level, corePos, -2, 2, casing)) {
             return PyramidTier.NONE;
         }
 
-        // Tier 2: 7×7 casing at layer -3
-        if (!checkLayer(level, corePos, -3, 3, casing)) {
-            return PyramidTier.TIER_1;
-        }
-
-        // Tier 3: 9×9 casing at layer -4
-        if (!checkLayer(level, corePos, -4, 4, casing)) {
-            return PyramidTier.TIER_2;
-        }
-
-        return PyramidTier.TIER_3;
+        return PyramidTier.TIER_1;
     }
 
     /**

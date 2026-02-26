@@ -1,21 +1,24 @@
 {
-    "type": "minecraft:crafting_shaped",
-    "category": "misc",
-    "pattern": [
-        " I ",
-        "INI",
-        " I "
-    ],
-    "key": {
-        "I": {
-            "item": "minecraft:iron_ingot"
-        },
-        "N": {
-            "item": "alientech:neutrion_ingot"
-        }
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "IGI",
+    "GNG",
+    "IGI"
+  ],
+  "key": {
+    "I": {
+      "item": "minecraft:iron_ingot"
     },
-    "result": {
-        "id": "alientech:inertial_stability_alloy",
-        "count": 1
+    "G": {
+      "item": "minecraft:gold_ingot"
+    },
+    "N": {
+      "item": "alientech:neutrion_ingot"
     }
+  },
+  "result": {
+    "id": "alientech:inertial_stability_alloy",
+    "count": 2
+  }
 }

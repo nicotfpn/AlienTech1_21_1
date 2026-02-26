@@ -1,177 +1,158 @@
 package net.nicotfpn.alientech.block.entity;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.Containers;
+import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ContainerData;
-import net.minecraft.world.Containers;
-import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.items.ItemStackHandler;
-
-import net.nicotfpn.alientech.AlienTech;
+import net.neoforged.neoforge.items.IItemHandler;
 import net.nicotfpn.alientech.Config;
-import net.nicotfpn.alientech.block.entity.base.AlienElectricBlockEntity;
+import net.nicotfpn.alientech.block.entity.base.AbstractMachineBlockEntity;
 import net.nicotfpn.alientech.item.ModItems;
+import net.nicotfpn.alientech.machine.core.IMachineProcess;
+import net.nicotfpn.alientech.machine.core.SlotAccessRules;
 import net.nicotfpn.alientech.machine.turbine.QuantumVacuumTurbineBlockEntity;
+import net.nicotfpn.alientech.pyramid.PyramidNetwork;
 import net.nicotfpn.alientech.pyramid.PyramidStructureValidator;
 import net.nicotfpn.alientech.pyramid.PyramidTier;
-import net.nicotfpn.alientech.pyramid.PyramidNetwork;
-import net.nicotfpn.alientech.util.StateValidator;
-import net.nicotfpn.alientech.util.SafeNBT;
-// debug helper removed from imports for cleaner code
 import net.nicotfpn.alientech.screen.PyramidCoreMenu;
+import net.nicotfpn.alientech.util.SafeNBT;
+import net.nicotfpn.alientech.util.StateValidator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.UUID;
+import java.util.function.Predicate;
+import java.util.function.ToIntFunction;
+
 /**
- * Pyramid Core — energy amplification structure (boost-only, NOT a generator).
- * <p>
- * The Pyramid Core validates its multiblock structure and broadcasts a
- * boost multiplier to nearby Quantum Vacuum Turbines. It does NOT generate
- * or transfer FE energy itself.
- * <p>
- * Architecture:
- * - Validates structure via PyramidStructureValidator (tiered)
- * - Also validates via legacy PyramidStructureHandler (for Ankh activation)
- * - Scans for nearby QVTs and applies highest-multiplier boost
- * - Scan/validation is throttled (configurable interval, default 200 ticks)
- * - Keeps fuel slot + GUI for backward compatibility
+ * Pyramid Core — The central brain of a pyramid structure.
+ * Handles structure validation, entropy generation, and turbine boosting.
+ * Ported to AbstractMachineBlockEntity framework.
+ * 
+ * NEW MECHANICS v2.0:
+ * - Requires Entropy Biomass to run (consumed over time)
+ * - Inertial Stability Alloy enables infinite production until turned off
+ * - Tracks owner who activated the pyramid
  */
-public class PyramidCoreBlockEntity extends AlienElectricBlockEntity {
+public class PyramidCoreBlockEntity extends AbstractMachineBlockEntity implements IMachineProcess, SlotAccessRules {
 
-    private static final int FUEL_SLOT = 0;
+    public static final int ALLOY_SLOT = 0;
+    public static final int BIOMASS_SLOT = 1;
+    private static final int SLOT_COUNT = 2;
 
-    private final ItemStackHandler itemHandler = new ItemStackHandler(1) {
-        @Override
-        protected void onContentsChanged(int slot) {
-            setChanged();
-            markInventoryDirty();
-        }
-
-        @Override
-        public boolean isItemValid(int slot, ItemStack stack) {
-            return stack.is(ModItems.GRAVITON.get());
-        }
-
-        @Override
-        public int getSlotLimit(int slot) {
-            return 64;
-        }
-    };
-
+    // State
     private boolean isActive = false;
     private boolean structureValid = false;
-    private long lastStructureCheck = 0;
-
-    // === Pyramid Boost ===
+    private int structureCheckCooldown = 0;
     private PyramidTier pyramidTier = PyramidTier.NONE;
     private float boostMultiplier = 1.0f;
-    private int structureCheckCooldown = 0;
+    
+    // Owner tracking - the player who activated the pyramid
+    private UUID ownerUUID = null;
+    private String ownerName = null;
+    
+    // Biomass consumption tracker
+    private int biomassTicks = 0;
+    private static final int BIOMASS_CONSUME_INTERVAL = 200; // ~10 seconds
 
-    protected final ContainerData containerData = new ContainerData() {
-        @Override
-        public int get(int index) {
-            return switch (index) {
-                case 0 -> energyStorage.getEnergyStored() & 0xFFFF;
-                case 1 -> (energyStorage.getEnergyStored() >> 16) & 0xFFFF;
-                case 2 -> isActive ? 1 : 0;
-                case 3 -> itemHandler.getStackInSlot(FUEL_SLOT).getCount();
-                case 4 -> net.nicotfpn.alientech.util.EnergyUtils.lowBits(energyStorage.getMaxEnergyStored());
-                case 5 -> net.nicotfpn.alientech.util.EnergyUtils.highBits(energyStorage.getMaxEnergyStored());
-                default -> 0;
-            };
-        }
+    // ==================== Constructor ====================
 
-        @Override
-        public void set(int index, int value) {
-        }
-
-        @Override
-        public int getCount() {
-            return 6;
-        }
-    };
-
-    public PyramidCoreBlockEntity(BlockPos pos, BlockState blockState) {
-        super(ModBlockEntities.PYRAMID_CORE_BE.get(), pos, blockState,
+    public PyramidCoreBlockEntity(BlockPos pos, BlockState state) {
+        super(ModBlockEntities.PYRAMID_CORE_BE.get(), pos, state,
                 Config.PYRAMID_CORE_CAPACITY.get(),
                 Config.PYRAMID_CORE_CAPACITY.get(),
-                Config.PYRAMID_CORE_CAPACITY.get());
+                Config.PYRAMID_CORE_CAPACITY.get(),
+                SLOT_COUNT);
     }
 
-    public static <T extends net.minecraft.world.level.block.entity.BlockEntity> void tick(Level level, BlockPos pos,
-            BlockState blockState, T blockEntity) {
-        if (level.isClientSide)
-            return;
-        if (blockEntity instanceof PyramidCoreBlockEntity core) {
-            core.onUpdateServer();
-        }
-    }
-
-    // ==================== Tick Logic (Boost-Only) ====================
+    // ==================== Tick Logic Overrides ====================
 
     @Override
     protected void onUpdateServer() {
-        // Validate level is valid
-        if (!net.nicotfpn.alientech.util.CapabilityUtils.isValidServerLevel(level)) {
+        if (level == null)
             return;
-        }
 
-        super.onUpdateServer(); // Throttled sync
-
-        // Countdown-based scan (more efficient than gameTime comparison)
+        // 1. Throttled Structure Validation & Boost Broadcast
         structureCheckCooldown--;
         if (structureCheckCooldown <= 0) {
-            int scanInterval = Config.PYRAMID_SCAN_INTERVAL.get();
-            structureCheckCooldown = Math.max(1, scanInterval); // Prevent zero or negative
-
-            // Tiered structure validation updates everything
+            structureCheckCooldown = Math.max(20, Config.PYRAMID_SCAN_INTERVAL.get());
             updateStructure();
 
-            // Structure is valid if we have ANY tier
-            boolean isValid = (pyramidTier != PyramidTier.NONE);
+            if (pyramidTier != PyramidTier.NONE) {
+                broadcastBoostToTurbines();
 
-            if (isValid != structureValid) {
-                structureValid = isValid;
-                setChanged();
-                markForSync();
-            }
-
-            // Deactivate if structure invalid
-            if (!structureValid && isActive) {
-                setActive(false);
-            }
-
-            // Broadcast boost to nearby turbines
-            broadcastBoostToTurbines();
-
-            // Generate entropy into the PyramidNetwork when active and structure valid.
-            try {
-                if (isActive && pyramidTier != PyramidTier.NONE) {
-                    int generation = Config.PYRAMID_CORE_GENERATION.get();
-                    if (generation > 0 && net.nicotfpn.alientech.util.CapabilityUtils.isValidServerLevel(level)) {
-                        int inserted = PyramidNetwork.get(level).insertEntropy(generation, false);
-                        if (inserted > 0) {
-                            // Mark for sync so clients see state changes (optional visual feedback)
-                            setChanged();
-                            markForSync();
+                // Entropy Generation Logic
+                if (isActive) {
+                    // Check if we have ISA for infinite production
+                    ItemStack alloyStack = inventory.getHandler().getStackInSlot(ALLOY_SLOT);
+                    boolean hasISA = !alloyStack.isEmpty() && alloyStack.is(ModItems.INERTIAL_STABILITY_ALLOY.get());
+                    
+                    // Check for biomass
+                    ItemStack biomassStack = inventory.getHandler().getStackInSlot(BIOMASS_SLOT);
+                    boolean hasBiomass = !biomassStack.isEmpty() && biomassStack.is(ModItems.ENTROPY_BIOMASS.get());
+                    
+                    // Either ISA (infinite) OR biomass (consumed) is needed to produce
+                    if (hasISA || hasBiomass) {
+                        int generation = Config.PYRAMID_CORE_GENERATION.get();
+                        if (generation > 0) {
+                            PyramidNetwork.get(level).insertEntropy(generation, false);
                         }
+                        
+                        // Consume biomass if not using ISA
+                        if (!hasISA && hasBiomass) {
+                            biomassTicks++;
+                            if (biomassTicks >= BIOMASS_CONSUME_INTERVAL) {
+                                biomassTicks = 0;
+                                biomassStack.shrink(1);
+                            }
+                        }
+                    } else {
+                        // No fuel - deactivate
+                        setActive(false);
                     }
                 }
-            } catch (Exception e) {
-                AlienTech.LOGGER.debug("PyramidCore: failed to insert entropy into network", e);
+            } else {
+                if (isActive)
+                    setActive(false);
+                structureValid = false;
             }
+        }
+
+        // 2. Framework Tick
+        super.onUpdateServer();
+    }
+
+    private void updateStructure() {
+        PyramidTier newTier = PyramidStructureValidator.validate(level, worldPosition);
+        if (newTier != pyramidTier) {
+            pyramidTier = newTier;
+            boostMultiplier = newTier.getMultiplier();
+            structureValid = (newTier != PyramidTier.NONE);
+            setChanged();
+            markForSync();
         }
     }
 
-    // ==================== Activation (Ankh) ====================
+    private void broadcastBoostToTurbines() {
+        int range = pyramidTier.getScanRange();
+        BlockPos.betweenClosed(worldPosition.offset(-range, -range, -range), worldPosition.offset(range, range, range))
+                .forEach(pos -> {
+                    if (level.isLoaded(pos)
+                            && level.getBlockEntity(pos) instanceof QuantumVacuumTurbineBlockEntity turbine) {
+                        turbine.setPyramidBoostMultiplier(boostMultiplier);
+                    }
+                });
+    }
+
+    // ==================== Activation API ====================
 
     public void setActive(boolean active) {
         if (this.isActive != active) {
@@ -185,12 +166,46 @@ public class PyramidCoreBlockEntity extends AlienElectricBlockEntity {
         return isActive;
     }
 
-    public boolean activatePyramid() {
-        // Validation now depends on having a valid tier
+    /**
+     * Activate pyramid with Inertial Stability Alloy (infinite production until off)
+     */
+    public boolean activatePyramid(Player player) {
         updateStructure();
         if (pyramidTier != PyramidTier.NONE) {
-            setActive(true);
-            return true;
+            // Set owner
+            this.ownerUUID = player.getUUID();
+            this.ownerName = player.getName().getString();
+            
+            // Consume ISA if present
+            ItemStack alloyStack = inventory.getHandler().getStackInSlot(ALLOY_SLOT);
+            if (!alloyStack.isEmpty() && alloyStack.is(ModItems.INERTIAL_STABILITY_ALLOY.get())) {
+                alloyStack.shrink(1);
+                setActive(true);
+                return true;
+            }
+            // If no ISA, check for biomass
+            ItemStack biomassStack = inventory.getHandler().getStackInSlot(BIOMASS_SLOT);
+            if (!biomassStack.isEmpty() && biomassStack.is(ModItems.ENTROPY_BIOMASS.get())) {
+                setActive(true);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean activatePyramidWithAnkh(Player player) {
+        updateStructure();
+        if (pyramidTier != PyramidTier.NONE) {
+            // Set owner
+            this.ownerUUID = player.getUUID();
+            this.ownerName = player.getName().getString();
+            
+            // Check for biomass
+            ItemStack biomassStack = inventory.getHandler().getStackInSlot(BIOMASS_SLOT);
+            if (!biomassStack.isEmpty() && biomassStack.is(ModItems.ENTROPY_BIOMASS.get())) {
+                setActive(true);
+                return true;
+            }
         }
         return false;
     }
@@ -198,111 +213,153 @@ public class PyramidCoreBlockEntity extends AlienElectricBlockEntity {
     public void deactivatePyramid() {
         setActive(false);
     }
-
-    // ==================== Pyramid Boost Logic ====================
-
-    /**
-     * Re-validate the pyramid structure tier using the new tiered validator.
-     */
-    public void updateStructure() {
-        PyramidTier newTier = PyramidStructureValidator.validate(level, worldPosition);
-        if (newTier != pyramidTier) {
-            pyramidTier = newTier;
-            boostMultiplier = newTier.getMultiplier();
-            setChanged();
-            markForSync();
-        }
+    
+    // ==================== Owner Getters ====================
+    
+    public UUID getOwnerUUID() {
+        return ownerUUID;
+    }
+    
+    public String getOwnerName() {
+        return ownerName;
+    }
+    
+    public boolean isOwner(Player player) {
+        if (ownerUUID == null) return true; // No owner = anyone can use
+        return player.getUUID().equals(ownerUUID);
     }
 
-    /**
-     * Find all QVTs within the tier's scan range and apply the boost multiplier.
-     * Highest-wins rule: turbines only accept >= current multiplier.
-     * <p>
-     * Deterministic: processes positions in order, validates all inputs.
-     */
-    private void broadcastBoostToTurbines() {
-        if (!net.nicotfpn.alientech.util.CapabilityUtils.isValidServerLevel(level)) {
-            return;
+    // ==================== IMachineProcess Implementation ====================
+
+    @Override
+    public boolean canProcess() {
+        return false;
+    }
+
+    @Override
+    public void onProcessComplete() {
+    }
+
+    @Override
+    public int getProcessTime() {
+        return 0;
+    }
+
+    @Override
+    public int getEnergyCost() {
+        return 0;
+    }
+
+    // ==================== Framework Hooks ====================
+
+    @Override
+    protected IMachineProcess getProcess() {
+        return this;
+    }
+
+    @Override
+    public SlotAccessRules getSlotAccessRules() {
+        return this;
+    }
+
+    @Override
+    protected int getFuelSlot() {
+        return -1;
+    }
+
+    @Override
+    protected int[] getOutputSlots() {
+        return new int[0];
+    }
+
+    @Override
+    protected Predicate<ItemStack> getFuelValidator() {
+        return stack -> false;
+    }
+
+    @Override
+    protected ToIntFunction<ItemStack> getBurnTimeFunction() {
+        return stack -> 0;
+    }
+
+    @Override
+    protected boolean isSlotValid(int slot, @NotNull ItemStack stack) {
+        if (slot == ALLOY_SLOT) {
+            return stack.is(ModItems.INERTIAL_STABILITY_ALLOY.get());
+        } else if (slot == BIOMASS_SLOT) {
+            return stack.is(ModItems.ENTROPY_BIOMASS.get());
         }
+        return false;
+    }
 
-        if (pyramidTier == PyramidTier.NONE) {
-            return;
-        }
+    @Override
+    protected int getContainerDataValue(int index) {
+        return switch (index) {
+            case 8 -> net.nicotfpn.alientech.util.EnergyUtils
+                    .lowBits(level != null ? PyramidNetwork.get(level).getEntropyAvailable() : 0);
+            case 9 -> net.nicotfpn.alientech.util.EnergyUtils
+                    .highBits(level != null ? PyramidNetwork.get(level).getEntropyAvailable() : 0);
+            case 10 -> net.nicotfpn.alientech.util.EnergyUtils
+                    .lowBits(level != null ? PyramidNetwork.get(level).getNetworkCapacity() : 0);
+            case 11 -> net.nicotfpn.alientech.util.EnergyUtils
+                    .highBits(level != null ? PyramidNetwork.get(level).getNetworkCapacity() : 0);
+            case 12 -> isActive ? 1 : 0;
+            case 13 -> inventory.getHandler().getStackInSlot(ALLOY_SLOT).getCount();
+            case 14 -> inventory.getHandler().getStackInSlot(BIOMASS_SLOT).getCount();
+            default -> super.getContainerDataValue(index);
+        };
+    }
 
-        int range = pyramidTier.getScanRange();
-        if (range <= 0 || range > 128) {
-            return; // Invalid range (prevent excessive scanning)
-        }
+    @Override
+    protected int getContainerDataCount() {
+        return 15;
+    }
 
-        // Validate multiplier
-        if (boostMultiplier < 1.0f || boostMultiplier > 1000.0f) {
-            return; // Invalid multiplier
-        }
+    // ==================== SlotAccessRules Implementation ====================
 
-        BlockPos min = worldPosition.offset(-range, -range, -range);
-        BlockPos max = worldPosition.offset(range, range, range);
+    @Override
+    public boolean canInsert(int slot, @NotNull ItemStack stack, @Nullable Direction side) {
+        return isSlotValid(slot, stack);
+    }
 
-        // Process positions deterministically
-        for (BlockPos pos : BlockPos.betweenClosed(min, max)) {
-            if (!net.nicotfpn.alientech.util.CapabilityUtils.isPositionLoaded(level, pos)) {
-                continue;
-            }
+    @Override
+    public boolean canExtract(int slot, @Nullable Direction side) {
+        return false;
+    }
 
-            // Safe block entity access
-            try {
-                if (level.getBlockEntity(pos) instanceof QuantumVacuumTurbineBlockEntity turbine) {
-                    turbine.setPyramidBoostMultiplier(boostMultiplier);
-                }
-            } catch (Exception e) {
-                // Block entity access can fail in edge cases - continue scanning
-                net.nicotfpn.alientech.AlienTech.LOGGER.debug("Failed to access block entity at {}", pos, e);
-            }
-        }
+    // ==================== Getters ====================
+
+    public IItemHandler getItemHandler() {
+        return inventory.getHandler();
     }
 
     public PyramidTier getPyramidTier() {
         return pyramidTier;
     }
 
-    public float getBoostMultiplier() {
-        return boostMultiplier;
-    }
-
-    // ==================== Getters ====================
-
-    public ItemStackHandler getItemHandler() {
-        return itemHandler;
-    }
-
     public boolean isStructureValid() {
         return structureValid;
     }
 
-    public int getMaxEnergy() {
-        return energyStorage.getMaxEnergyStored();
-    }
-
-    // ==================== MenuProvider ====================
+    // ==================== Menu & Drops ====================
 
     @Override
-    public Component getDisplayName() {
+    public @NotNull Component getDisplayName() {
         return Component.translatable("block.alientech.pyramid_core");
     }
 
     @Nullable
     @Override
     public AbstractContainerMenu createMenu(int id, Inventory pInv, Player pPlayer) {
-        return new PyramidCoreMenu(id, pInv, this, containerData);
+        return new PyramidCoreMenu(id, pInv, this, this.data);
     }
 
-    // ==================== Drops ====================
-
     public void drops() {
-        SimpleContainer inventory = new SimpleContainer(itemHandler.getSlots());
-        for (int i = 0; i < itemHandler.getSlots(); i++) {
-            inventory.setItem(i, itemHandler.getStackInSlot(i));
+        SimpleContainer container = new SimpleContainer(inventory.getHandler().getSlots());
+        for (int i = 0; i < inventory.getHandler().getSlots(); i++) {
+            container.setItem(i, inventory.getHandler().getStackInSlot(i));
         }
-        Containers.dropContents(this.level, this.worldPosition, inventory);
+        Containers.dropContents(this.level, this.worldPosition, container);
     }
 
     // ==================== Persistence ====================
@@ -310,91 +367,50 @@ public class PyramidCoreBlockEntity extends AlienElectricBlockEntity {
     @Override
     public void loadAdditional(@NotNull CompoundTag tag, @NotNull HolderLookup.Provider provider) {
         super.loadAdditional(tag, provider);
-
-        // Load inventory safely
-        CompoundTag invTag = SafeNBT.getCompound(tag, "ItemHandler");
-        if (invTag != null) {
-            try {
-                itemHandler.deserializeNBT(provider, invTag);
-            } catch (Exception e) {
-                AlienTech.LOGGER.error("Failed to load item handler", e);
-            }
-        }
-
         isActive = SafeNBT.getBoolean(tag, "IsActive", false);
         structureValid = SafeNBT.getBoolean(tag, "StructureValid", false);
-        lastStructureCheck = SafeNBT.getInt(tag, "LastStructureCheck", 0);
-
-        // Pyramid Boost - load with safe defaults
         int tierOrd = SafeNBT.getInt(tag, "PyramidTier", PyramidTier.NONE.ordinal());
-        if (tierOrd >= 0 && tierOrd < PyramidTier.values().length) {
-            pyramidTier = PyramidTier.values()[tierOrd];
-        } else {
-            pyramidTier = PyramidTier.NONE;
+        pyramidTier = (tierOrd >= 0 && tierOrd < PyramidTier.values().length) ? PyramidTier.values()[tierOrd]
+                : PyramidTier.NONE;
+        boostMultiplier = StateValidator.clampMultiplier(SafeNBT.getFloat(tag, "BoostMultiplier", 1.0f), 1.0f, 1000.0f);
+        
+        // Load owner
+        if (tag.hasUUID("OwnerUUID")) {
+            ownerUUID = tag.getUUID("OwnerUUID");
         }
-
-        float boost = SafeNBT.getFloat(tag, "BoostMultiplier", 1.0f);
-        boostMultiplier = StateValidator.clampMultiplier(boost, 1.0f, 1000.0f);
-
-        // Validate state after load
-        validateState();
-    }
-
-    /**
-     * Internal state validation method.
-     * Ensures all values are within valid ranges.
-     */
-    public void validateState() {
-        // Validate boost multiplier
-        boostMultiplier = StateValidator.clampMultiplier(boostMultiplier, 1.0f, 1000.0f);
-
-        // Validate structure check cooldown
-        structureCheckCooldown = StateValidator.ensureNonNegative(structureCheckCooldown);
-
-        // Validate pyramid tier consistency
-            if (pyramidTier == PyramidTier.NONE) {
-                // No tier - ensure boost is reset
-                if (boostMultiplier > 1.0f) {
-                    // reset multiplier
-                    boostMultiplier = 1.0f;
-                }
-                structureValid = false;
-            }
+        ownerName = SafeNBT.getString(tag, "OwnerName", null);
     }
 
     @Override
-    public void setRemoved() {
-        // Unregister from PyramidNetwork before removal to avoid stale cores
-        if (level != null) {
-            PyramidNetwork.get(level).unregisterCore(worldPosition);
+    public void saveAdditional(@NotNull CompoundTag tag, @NotNull HolderLookup.Provider provider) {
+        super.saveAdditional(tag, provider);
+        tag.putBoolean("IsActive", isActive);
+        tag.putBoolean("StructureValid", structureValid);
+        tag.putInt("PyramidTier", pyramidTier.ordinal());
+        tag.putFloat("BoostMultiplier", boostMultiplier);
+        
+        // Save owner
+        if (ownerUUID != null) {
+            tag.putUUID("OwnerUUID", ownerUUID);
         }
-        super.setRemoved();
-        // Clear cached state
-        pyramidTier = PyramidTier.NONE;
-        boostMultiplier = 1.0f;
-        structureValid = false;
+        if (ownerName != null) {
+            tag.putString("OwnerName", ownerName);
+        }
     }
 
     @Override
     public void onLoad() {
         super.onLoad();
-        // Validate state on load
-        validateState();
-        // Register this core with PyramidNetwork for dynamic tier computation
         if (level != null && !level.isClientSide()) {
             PyramidNetwork.get(level).registerCore(worldPosition);
         }
     }
 
     @Override
-    public void saveAdditional(@NotNull CompoundTag tag, @NotNull HolderLookup.Provider provider) {
-        super.saveAdditional(tag, provider);
-        tag.put("ItemHandler", itemHandler.serializeNBT(provider));
-        tag.putBoolean("IsActive", isActive);
-        tag.putBoolean("StructureValid", structureValid);
-        tag.putLong("LastStructureCheck", lastStructureCheck);
-        // Pyramid Boost
-        tag.putInt("PyramidTier", pyramidTier.ordinal());
-        tag.putFloat("BoostMultiplier", boostMultiplier);
+    public void setRemoved() {
+        if (level != null && !level.isClientSide()) {
+            PyramidNetwork.get(level).unregisterCore(worldPosition);
+        }
+        super.setRemoved();
     }
 }

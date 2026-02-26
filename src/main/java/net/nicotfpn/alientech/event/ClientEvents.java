@@ -39,5 +39,9 @@ public class ClientEvents {
         event.register(ModMenuTypes.ANCIENT_BATTERY_MENU.get(), AncientBatteryScreen::new);
         event.register(ModMenuTypes.ANCIENT_CHARGER_MENU.get(), AncientChargerScreen::new);
         event.register(ModMenuTypes.DECAY_CHAMBER_MENU.get(), DecayChamberScreen::new);
+        event.register(ModMenuTypes.QUANTUM_VACUUM_TURBINE_MENU.get(),
+                net.nicotfpn.alientech.screen.QuantumVacuumTurbineScreen::new);
+        event.register(ModMenuTypes.ENTROPY_RESERVOIR_MENU.get(),
+                net.nicotfpn.alientech.screen.EntropyReservoirScreen::new);
     }
 }

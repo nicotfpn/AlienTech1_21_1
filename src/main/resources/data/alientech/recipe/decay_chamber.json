@@ -1,19 +1,19 @@
 {
   "type": "minecraft:crafting_shaped",
+  "category": "misc",
   "pattern": [
-    "SIS",
-    "GFG",
-    "SIS"
+    "SGS",
+    "IRI",
+    "SGS"
   ],
   "key": {
     "S": { "item": "minecraft:stone_bricks" },
-    "I": { "item": "alientech:inertial_stability_alloy" },
-    "G": { "item": "alientech:graviton" },
-    "F": { "item": "minecraft:iron_bars" }
+    "G": { "item": "minecraft:glass" },
+    "I": { "item": "minecraft:iron_bars" },
+    "R": { "item": "minecraft:redstone" }
   },
   "result": {
     "id": "alientech:decay_chamber",
-    "count": 1
+    "count": 4
   }
 }
-

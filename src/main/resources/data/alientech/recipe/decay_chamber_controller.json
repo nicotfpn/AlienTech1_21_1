@@ -1,20 +1,20 @@
 {
   "type": "minecraft:crafting_shaped",
+  "category": "misc",
   "pattern": [
     "GCG",
-    "SDS",
-    "GPG"
+    "SRS",
+    "GOG"
   ],
   "key": {
-    "G": { "item": "alientech:graviton" },
-    "C": { "item": "alientech:concentrated_substrate" },
-    "S": { "item": "alientech:inertial_stability_alloy" },
-    "D": { "item": "minecraft:dispenser" },
-    "P": { "item": "alientech:decay_chamber" }
+    "G": { "item": "minecraft:gold_ingot" },
+    "C": { "item": "minecraft:copper_ingot" },
+    "S": { "item": "minecraft:stone" },
+    "R": { "item": "minecraft:redstone" },
+    "O": { "item": "minecraft:observer" }
   },
   "result": {
     "id": "alientech:decay_chamber_controller",
     "count": 1
   }
 }
-

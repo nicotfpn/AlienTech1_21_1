@@ -10,11 +10,6 @@
         {
             "type": "patchouli:crafting",
             "recipe": "alientech:graviton"
-        },
-        {
-            "type": "patchouli:crafting",
-            "recipe": "alientech:graviton_contained",
-            "text": "$(item)Contained Graviton$() - Stabilized inside a fortified glass housing to prevent spontaneous black holes."
         }
     ]
 }

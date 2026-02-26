@@ -11,9 +11,21 @@ import net.nicotfpn.alientech.AlienTech;
 
 public class AncientChargerScreen extends AbstractContainerScreen<AncientChargerMenu> {
 
-    // Reuse specific texture or generic background
+    // ==================== GUI Element Positions (from alientech_gui_gen.py V9)
+    // ====================
+    private static final int BAR_TOP = 17;
+    private static final int BAR_HEIGHT = 52;
+    private static final int BAR_WIDTH = 8;
+
+    private static final int ENTROPY_X = 8;
+    private static final int FE_X = 19;
+
+    // Zone 2 UVs
+    private static final int UV_ENT_U = 176;
+    private static final int UV_FE_U = 186;
+
     private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(AlienTech.MOD_ID,
-            "textures/gui/ancient_battery_gui.png");
+            "textures/gui/ancient_charger_gui.png");
 
     public AncientChargerScreen(AncientChargerMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
@@ -22,27 +34,57 @@ public class AncientChargerScreen extends AbstractContainerScreen<AncientCharger
     @Override
     protected void init() {
         super.init();
-        this.titleLabelY = 1000;
-        this.inventoryLabelY = 1000;
+        this.imageWidth = 176;
+        this.imageHeight = 166;
+        this.titleLabelX = (this.imageWidth - this.font.width(this.title)) / 2;
+        this.titleLabelY = 6;
+        this.inventoryLabelY = 72;
     }
 
     @Override
     protected void renderBg(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-        RenderSystem.setShaderTexture(0, TEXTURE);
+
         int x = (width - imageWidth) / 2;
         int y = (height - imageHeight) / 2;
 
-        guiGraphics.blit(TEXTURE, x, y, 0, 0, imageWidth, imageHeight, 256, 256);
+        // Layer 1: Background (Zone 1)
+        guiGraphics.blit(TEXTURE, x, y, 0, 0, imageWidth, imageHeight);
 
-        renderEnergy(guiGraphics, x, y);
+        // Layer 2: Entropy bar fill (Zone 2)
+        renderEntropyBar(guiGraphics, x, y);
+
+        // Layer 3: FE bar fill (Zone 2)
+        renderEnergyBar(guiGraphics, x, y);
     }
 
-    private void renderEnergy(GuiGraphics guiGraphics, int x, int y) {
-        int scaledHeight = menu.getScaledEnergy(52);
-        guiGraphics.blit(TEXTURE, x + 8, y + 20 + 52 - scaledHeight, 176, 52 - scaledHeight, 16, scaledHeight, 256,
-                256);
+    private void renderEntropyBar(GuiGraphics guiGraphics, int x, int y) {
+        int entropy = menu.getEntropy();
+        int max = menu.getMaxEntropy();
+        if (max > 0) {
+            int fill = (int) ((float) entropy / max * BAR_HEIGHT);
+            if (fill > 0) {
+                guiGraphics.blit(TEXTURE,
+                        x + ENTROPY_X, y + BAR_TOP + (BAR_HEIGHT - fill),
+                        UV_ENT_U, BAR_HEIGHT - fill,
+                        BAR_WIDTH, fill);
+            }
+        }
+    }
+
+    private void renderEnergyBar(GuiGraphics guiGraphics, int x, int y) {
+        int energy = menu.getEnergyStored();
+        int max = menu.getMaxEnergy();
+        if (max > 0) {
+            int fill = (int) ((float) energy / max * BAR_HEIGHT);
+            if (fill > 0) {
+                guiGraphics.blit(TEXTURE,
+                        x + FE_X, y + BAR_TOP + (BAR_HEIGHT - fill),
+                        UV_FE_U, BAR_HEIGHT - fill,
+                        BAR_WIDTH, fill);
+            }
+        }
     }
 
     @Override
@@ -50,61 +92,50 @@ public class AncientChargerScreen extends AbstractContainerScreen<AncientCharger
         renderBackground(guiGraphics, mouseX, mouseY, delta);
         super.render(guiGraphics, mouseX, mouseY, delta);
         renderTooltip(guiGraphics, mouseX, mouseY);
+        renderEnergyTooltip(guiGraphics, mouseX, mouseY);
+    }
 
-        // Tooltip for energy
-        if (isHovering(8, 20, 16, 52, mouseX, mouseY)) {
+    private void renderEnergyTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        int x = (width - imageWidth) / 2;
+        int y = (height - imageHeight) / 2;
+        int relX = mouseX - x;
+        int relY = mouseY - y;
+
+        // Entropy tooltip (8-16, 17-69)
+        if (relX >= ENTROPY_X && relX < ENTROPY_X + BAR_WIDTH && relY >= BAR_TOP && relY < BAR_TOP + BAR_HEIGHT) {
             guiGraphics.renderTooltip(font,
-                    Component.literal(menu.getEnergyStored() + " / " + menu.getMaxEnergy() + " FE"), mouseX, mouseY);
+                    Component.literal("Entropy: " + menu.getEntropy() + " / " + menu.getMaxEntropy() + " EN"), mouseX,
+                    mouseY);
         }
 
-        // Tooltip for Item Charge Bar
-        if (isHovering(80, 55, 16, 4, mouseX, mouseY) && !menu.getSlot(0).getItem().isEmpty()) {
-            guiGraphics.renderTooltip(font, Component.literal("Item Charge"), mouseX, mouseY);
+        // Energy Bar tooltip
+        if (relX >= FE_X && relX < FE_X + BAR_WIDTH && relY >= BAR_TOP && relY < BAR_TOP + BAR_HEIGHT) {
+            guiGraphics.renderTooltip(font,
+                    Component.literal("Energy: " + menu.getEnergyStored() + " / " + menu.getMaxEnergy() + " FE"),
+                    mouseX, mouseY);
         }
     }
 
     @Override
     protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        // Render "Ancient Charger" title centered
-        guiGraphics.drawString(font, Component.translatable("block.alientech.ancient_charger"),
-                (imageWidth - font.width(Component.translatable("block.alientech.ancient_charger"))) / 2, 6, 0xD4AF37,
-                false);
+        guiGraphics.drawString(font, title, titleLabelX, titleLabelY, 0x404040, false);
+        guiGraphics.drawString(font, playerInventoryTitle, 8, inventoryLabelY, 0x404040, false);
 
-        // Render Item Charge Bar under the slot
+        // Render Item Charge Status under the slot
         if (!menu.getSlot(0).getItem().isEmpty()) {
             net.minecraft.world.item.ItemStack stack = menu.getSlot(0).getItem();
             var energyCap = stack.getCapability(net.neoforged.neoforge.capabilities.Capabilities.EnergyStorage.ITEM);
             if (energyCap != null && energyCap.getMaxEnergyStored() > 0) {
                 int max = energyCap.getMaxEnergyStored();
                 int stored = energyCap.getEnergyStored();
-                int barWidth = 30; // Wider bar
-                int filled = (int) (barWidth * ((float) stored / max));
                 int percentage = (int) (100f * stored / max);
 
-                int barX = 65; // Centered under slot
-                int barY = 35 + 20; // Below slot
-
-                // Background (dark gray)
-                guiGraphics.fill(barX, barY, barX + barWidth, barY + 4, 0xFF333333);
-
-                // Gradient fill based on charge level
-                int color;
-                if (percentage >= 100) {
-                    color = 0xFF00FF00; // Green - fully charged
-                } else if (percentage >= 50) {
-                    color = 0xFF00AAFF; // Blue - charging well
-                } else {
-                    color = 0xFFFFAA00; // Orange - low charge
-                }
-                guiGraphics.fill(barX, barY, barX + filled, barY + 4, color);
-
-                // Border
-                guiGraphics.renderOutline(barX - 1, barY - 1, barWidth + 2, 6, 0xFF555555);
-
-                // Percentage text
                 String percentText = percentage + "%";
-                int textX = barX + barWidth + 4;
-                guiGraphics.drawString(font, percentText, textX, barY - 2, 0xFFFFFF, false);
+                int textWidth = font.width(percentText);
+                int textX = 80 + (18 - textWidth) / 2; // Centered under slot (x=80, w=18)
+                int textY = 35 + 20; // Below slot (y=35, h=18)
+
+                guiGraphics.drawString(font, percentText, textX, textY, 0x00FF00, false);
             }
         }
     }

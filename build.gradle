@@ -35,6 +35,10 @@ repositories {
         name = 'BlameJared'
         url = 'https://maven.blamejared.com'
     }
+    maven {
+        name = 'GeckoLib'
+        url = 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
+    }
 }
 
 neoForge {
@@ -85,6 +89,7 @@ sourceSets.main.resources {
 
 dependencies {
     implementation "vazkii.patchouli:Patchouli:1.21.1-92-NEOFORGE"
+    implementation "software.bernie.geckolib:geckolib-neoforge-${minecraft_version}:4.6.6"
 }
 
 tasks.withType(Jar).configureEach {

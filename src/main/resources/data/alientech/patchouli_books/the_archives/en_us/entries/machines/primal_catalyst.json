@@ -5,7 +5,7 @@
     "pages": [
         {
             "type": "patchouli:text",
-            "text": "A highly sophisticated forge that operates at the molecular level. The $(item)Primal Catalyst$() must be fed exactly 3 distinct specific ingredients and extreme amounts of $(energy)Energy$() to synthesize legendary artifacts."
+            "text": "A highly sophisticated forge that operates at the molecular level. The $(item)Primal Catalyst$() must be fed exactly 3 distinct specific ingredients and extreme amounts of $(alien)Entropy$() to synthesize legendary artifacts."
         },
         {
             "type": "patchouli:crafting",
@@ -13,8 +13,13 @@
         },
         {
             "type": "patchouli:text",
-            "title": "Usage Warning",
-            "text": "Currently, its primary known usage is forging the devastatingly dense $(l:patchouli:materials/alloys_disks)Inertial Stability Alloy$(). Attempting unauthorized recipes will simply freeze the processing matrix."
+            "title": "Power Source",
+            "text": "The Primal Catalyst requires $(l:patchouli:machines/entropy_reservoir)Entropy$() to operate! Connect it to your $(l:patchouli:machines/pyramid_core)Pyramid$() using $(l:patchouli:machines/entropy_cables)Entropy Cables$() to supply the massive amounts of energy needed for crafting."
+        },
+        {
+            "type": "patchouli:text",
+            "title": "Recipes",
+            "text": "Currently, its primary known usage is forging the $(l:patchouli:materials/alloys_disks)Inertial Stability Alloy$() - a critical component for advanced pyramid operation. The recipe requires:$()- 2x $(l:patchouli:materials/graviton)Graviton$()$- 1x $(l:patchouli:materials/neutrion)Neutrion Ingot$()"
         }
     ]
 }

@@ -26,7 +26,6 @@ public class ModCreativeModeTabs {
                         output.accept(ModItems.NEUTRION_INGOT.get());
                         output.accept(ModItems.GRAVITON.get());
                         output.accept(ModItems.GRAVION_DISK.get());
-                        output.accept(ModItems.GRAVITON_CONTAINED.get());
                         output.accept(ModItems.CONCENTRATED_SUBSTRATE.get());
                         output.accept(ModItems.EXOTIC_SUBSTRATE.get());
                         output.accept(ModItems.INERTIAL_STABILITY_ALLOY.get());

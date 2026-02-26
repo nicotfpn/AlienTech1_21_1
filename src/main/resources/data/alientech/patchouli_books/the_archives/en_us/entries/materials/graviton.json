@@ -5,16 +5,16 @@
     "pages": [
         {
             "type": "patchouli:text",
-            "text": "Sub-atomic particles exhibiting massive gravity distortion fields. They decay so rapidly they must be immediately encapsulated."
+            "text": "Sub-atomic particles exhibiting massive gravity distortion fields. $(item)Gravitons$() are essential for crafting $(l:patchouli:materials/alloys_disks)Inertial Stability Alloy$() in the $(l:patchouli:machines/primal_catalyst)Primal Catalyst$()."
         },
         {
             "type": "patchouli:crafting",
             "recipe": "alientech:graviton"
         },
         {
-            "type": "patchouli:crafting",
-            "recipe": "alientech:graviton_contained",
-            "text": "$(item)Contained Graviton$() - Stabilized inside a fortified glass housing to prevent spontaneous black holes."
+            "type": "patchouli:text",
+            "title": "Usage",
+            "text": "Gravitons are used primarily in the $(l:patchouli:machines/primal_catalyst)Primal Catalyst$() to create $(l:patchouli:materials/alloys_disks)Inertial Stability Alloy$(), which enables infinite pyramid operation!"
         }
     ]
 }

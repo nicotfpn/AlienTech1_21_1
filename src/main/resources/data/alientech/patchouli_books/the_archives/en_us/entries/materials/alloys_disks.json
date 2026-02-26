@@ -11,7 +11,7 @@
         {
             "type": "patchouli:spotlight",
             "item": "alientech:inertial_stability_alloy",
-            "text": "Forged in the Primal Catalyst via:$(br2)\u2022 $(alien)Concentrated Substrate$()$(br2)\u2022 $(alien)Neutrion Ingot$()$(br2)\u2022 $(alien)Graviton$()$(br2)$(br2)Provides the $(gold)Pyramid Core$() supreme stabilization."
+            "text": "Forged in the $(l:patchouli:machines/primal_catalyst)Primal Catalyst$() via:$(br2)\u2022 2x $(l:patchouli:materials/graviton)Graviton$()$(br2)\u2022 1x $(l:patchouli:materials/neutrion)Neutrion Ingot$()$(br2)$(4)CRITICAL$() - This alloy enables the $(l:patchouli:machines/pyramid_core)Pyramid Core$() to produce entropy $(4)CONTINUOUSLY$() when placed in its fuel slot!"
         }
     ]
 }

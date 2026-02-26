@@ -96,6 +96,15 @@ public class MachineEnergy {
     }
 
     /**
+     * Add energy to the storage (generation).
+     */
+    public void generateEnergy(int amount) {
+        if (amount > 0) {
+            storage.receiveEnergy(amount, false);
+        }
+    }
+
+    /**
      * Try to consume a fuel item from the fuel slot to start burning.
      * Called by MachineTicker only when: no burn time, insufficient energy, and
      * recipe available.

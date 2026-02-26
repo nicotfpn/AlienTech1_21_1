@@ -16,11 +16,12 @@ import java.util.WeakHashMap;
  * <p>
  * Responsibilities:
  * - Keep a set of registered Pyramid Core positions (cores register/unregister
- *   in their onLoad()/setRemoved()).
+ * in their onLoad()/setRemoved()).
  * - Maintain a shared entropy buffer that machines can pull from using
- *   {@link #extractEntropy(int, boolean)}.
- * - Compute current tier dynamically by querying {@link PyramidStructureValidator} for
- *   each registered core (highest tier wins).
+ * {@link #extractEntropy(int, boolean)}.
+ * - Compute current tier dynamically by querying
+ * {@link PyramidStructureValidator} for
+ * each registered core (highest tier wins).
  *
  * Note: persistence to world save is intentionally left out for now (the
  * network provides API hooks `saveToTag`/`loadFromTag` for future integration
@@ -40,11 +41,6 @@ public final class PyramidNetwork {
         this.level = Objects.requireNonNull(level);
         // Default capacity -- reasonable default; can be tuned via Config later
         this.networkBuffer = new EntropyStorage(100000, this::onNetworkChanged);
-        // If running on server, ensure SavedData exists (best-effort)
-        try {
-            PyramidSavedData.loadOrCreate();
-        } catch (Exception ignored) {
-        }
     }
 
     private void onNetworkChanged() {
@@ -53,7 +49,8 @@ public final class PyramidNetwork {
         // Mark saved data dirty so it will be written to disk on next save
         try {
             PyramidSavedData sd = PyramidSavedData.loadOrCreate();
-            if (sd != null) sd.setDirty();
+            if (sd != null)
+                sd.setDirty();
         } catch (Exception ignored) {
         }
     }
@@ -68,6 +65,14 @@ public final class PyramidNetwork {
             if (net == null) {
                 net = new PyramidNetwork(level);
                 INSTANCES.put(level, net);
+
+                // If running on server, apply the SavedData content to this network.
+                // This MUST be called after placing it in INSTANCES to break the recursive load
+                // loop.
+                try {
+                    PyramidSavedData.loadOrCreate();
+                } catch (Exception ignored) {
+                }
             }
             return net;
         }
@@ -76,14 +81,16 @@ public final class PyramidNetwork {
     // ========== Core registration (no chunk scanning) ==========
 
     public void registerCore(BlockPos pos) {
-        if (pos == null) return;
+        if (pos == null)
+            return;
         synchronized (cores) {
             cores.add(pos.immutable());
         }
     }
 
     public void unregisterCore(BlockPos pos) {
-        if (pos == null) return;
+        if (pos == null)
+            return;
         synchronized (cores) {
             cores.remove(pos);
         }
@@ -136,7 +143,8 @@ public final class PyramidNetwork {
      * Insert entropy into the network buffer. Returns amount actually inserted.
      */
     public int insertEntropy(int amount, boolean simulate) {
-        if (amount <= 0) return 0;
+        if (amount <= 0)
+            return 0;
         return networkBuffer.insertEntropy(amount, simulate);
     }
 
@@ -148,7 +156,8 @@ public final class PyramidNetwork {
      * local buffer; machines must never consume directly from the network.
      */
     public int extractEntropy(int amount, boolean simulate) {
-        if (amount <= 0) return 0;
+        if (amount <= 0)
+            return 0;
         return networkBuffer.extractEntropy(amount, simulate);
     }
 
@@ -187,7 +196,8 @@ public final class PyramidNetwork {
      * set and buffer value.
      */
     public void loadFromTag(CompoundTag tag) {
-        if (tag == null) return;
+        if (tag == null)
+            return;
         networkBuffer.load(tag);
         if (tag.contains("Cores")) {
             long[] longs = tag.getLongArray("Cores");

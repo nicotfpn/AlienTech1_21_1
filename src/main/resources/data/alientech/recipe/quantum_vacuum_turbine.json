@@ -1,20 +1,20 @@
 {
   "type": "minecraft:crafting_shaped",
+  "category": "misc",
   "pattern": [
-    "SQS",
+    "NGN",
     "GTG",
-    "SCS"
+    "OBO"
   ],
   "key": {
-    "S": { "item": "alientech:inertial_stability_alloy" },
-    "Q": { "item": "alientech:graviton_contained" },
-    "G": { "item": "alientech:graviton" },
+    "N": { "item": "alientech:neutrion_ingot" },
+    "G": { "item": "minecraft:gold_ingot" },
     "T": { "item": "minecraft:blast_furnace" },
-    "C": { "item": "minecraft:observer" }
+    "O": { "item": "minecraft:observer" },
+    "B": { "item": "minecraft:diamond" }
   },
   "result": {
     "id": "alientech:quantum_vacuum_turbine",
     "count": 1
   }
 }
-

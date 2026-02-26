@@ -5,11 +5,16 @@
     "pages": [
         {
             "type": "patchouli:text",
-            "text": "A relic of pure divinity, vibrating with a frequency that nullifies entropy. It is capable of activating the $(item)Pyramid Core$() structure infinitely, without being consumed in the process like primitive alloys."
+            "text": "A relic of pure divinity, vibrating with a frequency that nullifies entropy. It is capable of activating the $(l:patchouli:machines/pyramid_core)Pyramid Core$() structure without being consumed in the process.$()$(br)$()This is a $(4)CRITICAL EARLY GAME$() item - craft it BEFORE building your pyramid to activate it infinitely!"
         },
         {
             "type": "patchouli:crafting",
             "recipe": "alientech:ancient_ankh"
+        },
+        {
+            "type": "patchouli:text",
+            "title": "Usage",
+            "text": "Simply right-click on a $(l:patchouli:machines/pyramid_core)Pyramid Core$() with the Ancient Ankh to activate it. The pyramid will produce entropy continuously as long as it remains active.$()$(br)$()Note: You must also have $(item)Entropy Biomass$() in the pyramid's inventory for it to function, unless you also add $(item)Inertial Stability Alloy$() for truly infinite power!"
         }
     ]
 }

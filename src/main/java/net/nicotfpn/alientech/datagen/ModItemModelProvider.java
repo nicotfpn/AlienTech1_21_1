@@ -23,7 +23,6 @@ public class ModItemModelProvider extends ItemModelProvider {
         // Novos itens baseados nas suas texturas
         simpleItem("concentrated_substrate");
         simpleItem("exotic_substrate");
-        simpleItem("graviton_contained");
         simpleItem("horus_eye");
         simpleItem("horus_eye_activated");
         simpleItem("inertial_stability_alloy");

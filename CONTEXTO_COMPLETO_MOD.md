@@ -287,6 +287,12 @@ public class MyMachine extends AbstractMachineBlockEntity {
   - Tier 1: Base 5x5 (Scan Range: 32)
   - Tier 2: Base 7x7 (Scan Range: 48)
   - Tier 3: Base 9x9 (Scan Range: 64)
+- Ativação:
+  - Requer Inertial Stability Alloy no slot do Core (consumido)
+  - Ou pode ser ativada com Ancient Ankh (não consome item)
+  - Uma vez ativa, gera entropia continuamente
+- Modelo 3D: Custom Blockbench model com formato de pirâmide escalonada (texturas corrigidas)
+- GUI: Mostra buffer de entropia da rede de pirâmides (não local)
 - Função: Amplifica geração de FE de Turbinas próximas
 
 ### 6. Sistema de Segurança e Validação

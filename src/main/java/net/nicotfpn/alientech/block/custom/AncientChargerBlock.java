@@ -125,14 +125,13 @@ public class AncientChargerBlock extends BaseEntityBlock {
         return new AncientChargerBlockEntity(pos, state);
     }
 
-    @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state,
             BlockEntityType<T> type) {
         return createTickerHelper(type, ModBlockEntities.ANCIENT_CHARGER_BE.get(),
                 level.isClientSide()
-                        ? AncientChargerBlockEntity::clientTick
-                        : AncientChargerBlockEntity::serverTick);
+                        ? net.nicotfpn.alientech.block.entity.base.AlienBlockEntity::tickClient
+                        : net.nicotfpn.alientech.block.entity.base.AlienBlockEntity::tickServer);
     }
 
     // ==================== Comparator Output ====================

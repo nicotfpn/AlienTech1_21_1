@@ -5,7 +5,7 @@
     "pages": [
         {
             "type": "patchouli:text",
-            "text": "The absolute pinnacle of their engineering. The $(item)Pyramid Core$() does not generate power itself, but rather $(alien)resonates$() with reality, broadcasting a massive efficiency boost to nearby $(l:patchouli:machines/quantum_vacuum_turbine)Quantum Vacuum Turbines$(/l)."
+            "text": "The absolute pinnacle of their engineering. The $(item)Pyramid Core$() is the heart of the alien pyramid structure. It $(alien)resonates$() with reality, generating $(l:patchouli:materials/neutrion)Entropy$() that flows through $(l:patchouli:machines/entropy_cables)Entropy Cables$(/l) to power your machines."
         },
         {
             "type": "patchouli:crafting",
@@ -14,7 +14,7 @@
         {
             "type": "patchouli:text",
             "title": "Activation",
-            "text": "The Core remains dormant until built into a massive pyramidal structure. Once built, it must be ignited by consuming an $(l:patchouli:materials/alloys_disks)Inertial Stability Alloy$(/l) or touched by an $(l:patchouli:tools/ancient_ankh)Ancient Ankh$(/l)."
+            "text": "The Core remains dormant until built into a massive pyramidal structure. Once built, it must be ignited by consuming $(item)Entropy Biomass$() or touched by an $(l:patchouli:tools/ancient_ankh)Ancient Ankh$(/l).$()$()$(br)$()With $(item)Inertial Stability Alloy$() in the fuel slot, the pyramid produces entropy $(4)CONTINUOUSLY$() until deactivated!"
         },
         {
             "type": "patchouli:multiblock",
@@ -49,7 +49,100 @@
                     "A": "alientech:alien_pyramid_casing"
                 }
             },
-            "text": "The Tier 1 Structure requires a 3x3 of $(gold)Gold Blocks$() directly beneath the Core, followed by a 5x5 of $(alien)Alien Pyramid Casing$(). Grants a modest boost."
+            "text": "Tier 1 Structure:$(br)$- Base: 3x3 $(gold)Gold Blocks$()$(br)- Layer 2: 5x5 $(alien)Alien Pyramid Casing$()$(br)$()$(4)MACHINES USE ENTROPY DIRECTLY$()$(br)$()This is the entry-level pyramid. Machines connected to it consume Entropy directly."
+        },
+        {
+            "type": "patchouli:multiblock",
+            "name": "Pyramid Tier 2",
+            "multiblock": {
+                "pattern": [
+                    [
+                        "  0  ",
+                        "     ",
+                        "     ",
+                        "     ",
+                        "     ",
+                        "     ",
+                        "     "
+                    ],
+                    [
+                        "     ",
+                        "     ",
+                        " NNN ",
+                        " NNN ",
+                        " NNN ",
+                        "     ",
+                        "     "
+                    ],
+                    [
+                        "     ",
+                        "AAAAAAA",
+                        "AAAAAAA",
+                        "AAAAAAA",
+                        "AAAAAAA",
+                        "AAAAAAA",
+                        "AAAAAAA"
+                    ]
+                ],
+                "mapping": {
+                    "0": "alientech:pyramid_core",
+                    "N": "alientech:neutrion_block",
+                    "A": "alientech:alien_pyramid_casing"
+                }
+            },
+            "text": "Tier 2 Structure:$(br)$- Base: 3x3 $(5)Neutrion Blocks$()$(br)- Layer 2: 7x7 $(alien)Alien Pyramid Casing$()$(br)$()$(4)MACHINES CAN USE FE$()$(br)$()With Tier 2, the entropy is converted internally, allowing machines to use standard $(6)Forge Energy (FE)$() instead of raw entropy!"
+        },
+        {
+            "type": "patchouli:multiblock",
+            "name": "Pyramid Tier 3",
+            "multiblock": {
+                "pattern": [
+                    [
+                        "  0  ",
+                        "     ",
+                        "     ",
+                        "     ",
+                        "     ",
+                        "     ",
+                        "     ",
+                        "     ",
+                        "     "
+                    ],
+                    [
+                        "     ",
+                        "     ",
+                        "     ",
+                        " NNN ",
+                        " NNN ",
+                        " NNN ",
+                        "     ",
+                        "     ",
+                        "     "
+                    ],
+                    [
+                        "     ",
+                        "AAAAAAAAA",
+                        "AAAAAAAAA",
+                        "AAAAAAAAA",
+                        "AAAAAAAAA",
+                        "AAAAAAAAA",
+                        "AAAAAAAAA",
+                        "AAAAAAAAA",
+                        "AAAAAAAAA"
+                    ]
+                ],
+                "mapping": {
+                    "0": "alientech:pyramid_core",
+                    "N": "alientech:neutrion_block",
+                    "A": "alientech:alien_pyramid_casing"
+                }
+            },
+            "text": "Tier 3 Structure:$(br)$- Base: 3x3 $(5)Neutrion Blocks$()$(br)- Layer 2: 9x9 $(alien)Alien Pyramid Casing$()$(br)$()$(4)MAXIMUM POWER$()$(br)$()The ultimate alien structure. Provides the highest entropy generation rate and full FE conversion for all connected machines."
+        },
+        {
+            "type": "patchouli:text",
+            "title": "Entropy Flow",
+            "text": "The pyramid generates entropy that flows through $(l:patchouli:machines/entropy_cables)Entropy Cables$(/l) to an $(l:patchouli:machines/entropy_reservoir)Entropy Reservoir$(), which then distributes power to your machines.$()$(br)$()Owner System: Only the player who activates the pyramid can extract its entropy!"
         }
     ]
 }

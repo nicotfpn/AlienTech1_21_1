@@ -6,7 +6,6 @@
   "item.alientech.ancient_ankh": "Ancient Ankh",
   "item.alientech.concentrated_substrate": "Concentrated Substrate",
   "item.alientech.exotic_substrate": "Exotic Substrate",
-  "item.alientech.graviton_contained": "Contained Graviton",
   "item.alientech.horus_eye": "Eye of Horus",
   "item.alientech.horus_eye_activated": "Activated Eye of Horus",
   "item.alientech.pharaoh_sword": "Pharaoh Sword",
@@ -59,5 +58,11 @@
   "message.alientech.evolution_insufficient_entropy": "Not enough entropy stored to evolve.",
   "message.alientech.evolution_max_stage": "You have reached the maximum evolution stage.",
   "container.alientech.decay_chamber_controller": "Decay Chamber",
-  "message.alientech.decay_immune": "This entity is immune to decay!"
+  "message.alientech.decay_immune": "This entity is immune to decay!",
+  "item.alientech.pocket_prison.captured": "Captured: %s",
+  "item.alientech.pocket_prison.released": "Released: %s",
+  "item.alientech.pocket_prison.contains": "Contains: %s",
+  "item.alientech.pocket_prison.health": "Health: %s",
+  "item.alientech.pocket_prison.empty": "Empty",
+  "item.alientech.pocket_prison.already_occupied": "The prison is already occupied!"
 }

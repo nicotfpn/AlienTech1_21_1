@@ -109,4 +109,24 @@ public final class SafeNBT {
             return null;
         }
     }
+
+    /**
+     * Safely get a string from NBT with a default value.
+     * 
+     * @param tag the NBT tag (can be null)
+     * @param key the key to read
+     * @param defaultValue the default value if key is missing or invalid
+     * @return the string value or default
+     */
+    @Nullable
+    public static String getString(@Nullable CompoundTag tag, @NotNull String key, @Nullable String defaultValue) {
+        if (tag == null || !tag.contains(key)) {
+            return defaultValue;
+        }
+        try {
+            return tag.getString(key);
+        } catch (Exception e) {
+            return defaultValue;
+        }
+    }
 }

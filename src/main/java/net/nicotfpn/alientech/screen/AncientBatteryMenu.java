@@ -39,7 +39,7 @@ public class AncientBatteryMenu extends AbstractContainerMenu {
 
     public AncientBatteryMenu(int containerId, Inventory inv, FriendlyByteBuf extraData) {
         this(containerId, inv, inv.player.level().getBlockEntity(extraData.readBlockPos()),
-                new SimpleContainerData(5));
+                new SimpleContainerData(12));
     }
 
     public AncientBatteryMenu(int containerId, Inventory inv, BlockEntity entity, ContainerData data) {
@@ -48,16 +48,12 @@ public class AncientBatteryMenu extends AbstractContainerMenu {
         blockEntity = ((AncientBatteryBlockEntity) entity);
         this.data = data;
 
-        // Slot positions based on 176x166 GUI
-        // Charge Slot (Output - Top): x=26, y=20
-        // Discharge Slot (Input - Bottom): x=26, y=50
-        // Energy Bar (Center): x=66... (Visual only)
-
+        // Slot positions from alientech_gui_gen.py: x=79/103, y=63
         // Slot 0: Charge Item (Battery -> Item)
-        this.addSlot(new EnergySlot(blockEntity.getItemHandler(), 0, 29, 23));
+        this.addSlot(new EnergySlot(blockEntity.getItemHandler(), 0, 79, 63));
 
         // Slot 1: Discharge Item (Item -> Battery)
-        this.addSlot(new EnergySlot(blockEntity.getItemHandler(), 1, 29, 53));
+        this.addSlot(new EnergySlot(blockEntity.getItemHandler(), 1, 103, 63));
 
         addDataSlots(data);
 
@@ -67,16 +63,22 @@ public class AncientBatteryMenu extends AbstractContainerMenu {
 
     // ==================== Energy Data ====================
 
+    // ==================== Energy Data ====================
+
     public int getEnergyStored() {
-        int low = data.get(0) & 0xFFFF;
-        int high = data.get(1) & 0xFFFF;
-        return low | (high << 16);
+        return data.get(4) | (data.get(5) << 16);
     }
 
     public int getMaxEnergy() {
-        int low = data.get(2) & 0xFFFF;
-        int high = data.get(3) & 0xFFFF;
-        return low | (high << 16);
+        return data.get(6) | (data.get(7) << 16);
+    }
+
+    public int getEntropy() {
+        return data.get(8) | (data.get(9) << 16);
+    }
+
+    public int getMaxEntropy() {
+        return data.get(10) | (data.get(11) << 16);
     }
 
     public float getEnergyPercentage() {

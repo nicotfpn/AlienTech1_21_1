@@ -1,273 +1,236 @@
 package net.nicotfpn.alientech.block.entity;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.energy.IEnergyStorage;
-import net.neoforged.neoforge.items.ItemStackHandler;
+import net.neoforged.neoforge.items.IItemHandler;
 import net.nicotfpn.alientech.Config;
-import net.nicotfpn.alientech.block.entity.base.AlienElectricBlockEntity;
+import net.nicotfpn.alientech.block.entity.base.AbstractMachineBlockEntity;
 import net.nicotfpn.alientech.client.IHudProvider;
+import net.nicotfpn.alientech.machine.core.IMachineProcess;
+import net.nicotfpn.alientech.machine.core.SlotAccessRules;
+import net.nicotfpn.alientech.screen.AncientChargerMenu;
 import net.nicotfpn.alientech.util.EnergyUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
+import java.util.function.ToIntFunction;
 
 /**
- * AncientCharger - Optimized High-Throughput Energy Buffer.
- * Extends AlienElectricBlockEntity for consistent behavior.
- * Implements IHudProvider for modular HUD rendering.
+ * AncientCharger — High-throughput automated energy buffer and item
+ * workstation.
+ * Ported to AbstractMachineBlockEntity framework.
  */
-public class AncientChargerBlockEntity extends AlienElectricBlockEntity implements IHudProvider {
+public class AncientChargerBlockEntity extends AbstractMachineBlockEntity
+        implements IMachineProcess, SlotAccessRules, IHudProvider {
 
     public static final int MAX_TRANSFER = 100_000;
-    private static final int CACHE_REFRESH_INTERVAL = 100; // Ticks (5 seconds)
+    private static final int CACHE_REFRESH_INTERVAL = 100;
+    private static final int SLOT_COUNT = 1;
 
-    // Cache
     private final List<BlockPos> cachedCores = new ArrayList<>();
     private final List<BlockPos> cachedBatteries = new ArrayList<>();
     private long lastCacheUpdate = 0;
 
-    // Inventory for "Docking"
-    private final ItemStackHandler itemHandler = new ItemStackHandler(1) {
-        @Override
-        protected void onContentsChanged(int slot) {
-            setChanged();
-            markInventoryDirty(); // Immediate sync for item changes
-        }
-    };
-
-    // ContainerData for sync (Energy split into 16-bit chunks)
-    protected final net.minecraft.world.inventory.ContainerData data = new net.minecraft.world.inventory.ContainerData() {
-        @Override
-        public int get(int index) {
-            return switch (index) {
-                // Indices 4-7 to match AbstractMachineBlockEntity convention (consistency)
-                case 4 -> net.nicotfpn.alientech.util.EnergyUtils.lowBits(energyStorage.getEnergyStored());
-                case 5 -> net.nicotfpn.alientech.util.EnergyUtils.highBits(energyStorage.getEnergyStored());
-                case 6 -> net.nicotfpn.alientech.util.EnergyUtils.lowBits(energyStorage.getMaxEnergyStored());
-                case 7 -> net.nicotfpn.alientech.util.EnergyUtils.highBits(energyStorage.getMaxEnergyStored());
-                default -> 0;
-            };
-        }
-
-        @Override
-        public void set(int index, int value) {
-        }
-
-        @Override
-        public int getCount() {
-            return 8;
-        }
-    };
-
-    public AncientChargerBlockEntity(BlockPos pos, BlockState blockState) {
-        super(ModBlockEntities.ANCIENT_CHARGER_BE.get(), pos, blockState,
-                Config.CHARGER_CAPACITY.get(), MAX_TRANSFER);
+    public AncientChargerBlockEntity(BlockPos pos, BlockState state) {
+        super(ModBlockEntities.ANCIENT_CHARGER_BE.get(), pos, state,
+                Config.CHARGER_CAPACITY.get(), MAX_TRANSFER, MAX_TRANSFER, SLOT_COUNT);
     }
 
     @Override
-    public Component getDisplayName() {
-        return Component.translatable("block.alientech.ancient_charger");
+    protected void onUpdateServer() {
+        if (level == null)
+            return;
+        if (level.getGameTime() - lastCacheUpdate > CACHE_REFRESH_INTERVAL) {
+            refreshNeighborCache(level, worldPosition);
+        }
+        handleEnergyIO(level);
+        super.onUpdateServer();
+        chargeDockedItem();
+    }
+
+    private void chargeDockedItem() {
+        ItemStack stack = inventory.getHandler().getStackInSlot(0);
+        if (!stack.isEmpty() && energy.getEnergyStored() > 0) {
+            IEnergyStorage itemEnergy = stack.getCapability(Capabilities.EnergyStorage.ITEM);
+            if (itemEnergy != null && itemEnergy.canReceive()) {
+                int accepted = itemEnergy.receiveEnergy(Math.min(MAX_TRANSFER, energy.getEnergyStored()), false);
+                if (accepted > 0) {
+                    energy.getEnergyStorage().extractEnergy(accepted, false);
+                    inventory.getHandler().setStackInSlot(0, stack);
+                    setChanged();
+                }
+            }
+        }
+    }
+
+    private void refreshNeighborCache(Level level, BlockPos center) {
+        cachedCores.clear();
+        cachedBatteries.clear();
+        BlockPos.betweenClosedStream(center.offset(-1, -1, -1), center.offset(1, 1, 1)).forEach(pos -> {
+            if (pos.equals(center))
+                return;
+            BlockEntity be = level.getBlockEntity(pos);
+            if (be instanceof PyramidCoreBlockEntity)
+                cachedCores.add(pos.immutable());
+            else if (be instanceof AncientBatteryBlockEntity)
+                cachedBatteries.add(pos.immutable());
+        });
+        lastCacheUpdate = level.getGameTime();
+    }
+
+    private void handleEnergyIO(Level level) {
+        if (energy.getEnergyStored() < energy.getCapacity()) {
+            for (BlockPos pos : cachedCores) {
+                IEnergyStorage coreCap = level.getCapability(Capabilities.EnergyStorage.BLOCK, pos, null);
+                if (coreCap != null && coreCap.canExtract()) {
+                    EnergyUtils.pullEnergy(energy.getStorage(), coreCap, MAX_TRANSFER);
+                }
+            }
+        }
+        if (energy.getEnergyStored() > 0) {
+            for (BlockPos pos : cachedBatteries) {
+                IEnergyStorage batCap = level.getCapability(Capabilities.EnergyStorage.BLOCK, pos, null);
+                if (batCap != null && batCap.canReceive()) {
+                    EnergyUtils.pushEnergy(energy.getStorage(), batCap, MAX_TRANSFER);
+                }
+            }
+        }
     }
 
     @Override
-    public net.minecraft.world.inventory.AbstractContainerMenu createMenu(int containerId,
-            net.minecraft.world.entity.player.Inventory playerInventory,
-            net.minecraft.world.entity.player.Player player) {
-        // Use the local ContainerData which now handles 16-bit split
-        return new net.nicotfpn.alientech.screen.AncientChargerMenu(containerId, playerInventory, this, this.data);
+    public boolean canProcess() {
+        return false;
     }
 
-    public ItemStackHandler getItemHandler() {
-        return itemHandler;
+    @Override
+    public void onProcessComplete() {
     }
 
-    // ==================== HUD Provider ====================
+    @Override
+    public int getProcessTime() {
+        return 0;
+    }
+
+    @Override
+    public int getEnergyCost() {
+        return 0;
+    }
+
+    @Override
+    protected IMachineProcess getProcess() {
+        return this;
+    }
+
+    @Override
+    public SlotAccessRules getSlotAccessRules() {
+        return this;
+    }
+
+    @Override
+    protected int getFuelSlot() {
+        return -1;
+    }
+
+    @Override
+    protected int[] getOutputSlots() {
+        return new int[0];
+    }
+
+    @Override
+    protected Predicate<ItemStack> getFuelValidator() {
+        return stack -> false;
+    }
+
+    @Override
+    protected ToIntFunction<ItemStack> getBurnTimeFunction() {
+        return stack -> 0;
+    }
+
+    @Override
+    protected boolean isSlotValid(int slot, @NotNull ItemStack stack) {
+        return stack.getCapability(Capabilities.EnergyStorage.ITEM) != null;
+    }
+
+    @Override
+    public boolean canInsert(int slot, @NotNull ItemStack stack, @Nullable Direction side) {
+        return isSlotValid(slot, stack);
+    }
+
+    @Override
+    public boolean canExtract(int slot, @Nullable Direction side) {
+        return true;
+    }
 
     @Override
     public void addHudLines(List<Component> lines) {
-        // Line 1: Block name (rendered separately by overlay as title)
-        // Line 2: Energy
-        String storedText = EnergyUtils.formatCompact(energyStorage.getEnergyStored());
-        String maxText = EnergyUtils.formatCompact(energyStorage.getMaxEnergyStored());
-        lines.add(Component.literal("⚡ " + storedText + " / " + maxText + " FE").withColor(0xD4AF37));
-
-        // Line 3: Item charging status
-        net.minecraft.world.item.ItemStack stack = itemHandler.getStackInSlot(0);
+        String storedText = EnergyUtils.formatCompact(energy.getEnergyStored());
+        String maxText = EnergyUtils.formatCompact(energy.getCapacity());
+        lines.add(Component.literal("\u26A1 " + storedText + " / " + maxText + " FE").withColor(0xD4AF37));
+        ItemStack stack = inventory.getHandler().getStackInSlot(0);
         if (!stack.isEmpty()) {
             IEnergyStorage itemEnergy = stack.getCapability(Capabilities.EnergyStorage.ITEM);
             if (itemEnergy != null && itemEnergy.getMaxEnergyStored() > 0) {
                 int pct = (int) (100.0f * itemEnergy.getEnergyStored() / itemEnergy.getMaxEnergyStored());
-                boolean isCharging = energyStorage.getEnergyStored() > 0
+                boolean isCharging = energy.getEnergyStored() > 0
                         && itemEnergy.getEnergyStored() < itemEnergy.getMaxEnergyStored();
-
-                int statusColor = isCharging ? 0x55FF55 : (pct >= 100 ? 0x00FFAA : 0xFF5555);
-                String statusPrefix = isCharging ? "⚡ Charging: " : (pct >= 100 ? "✔ Full: " : "⏳ Waiting: ");
-
-                lines.add(Component.literal(statusPrefix + pct + "% ")
-                        .withColor(statusColor)
+                lines.add(Component.literal(isCharging ? "⚡ Charging: " : (pct >= 100 ? "✔ Full: " : "⏳ Waiting: "))
+                        .withColor(isCharging ? 0x55FF55 : (pct >= 100 ? 0x00FFAA : 0xFF5555))
                         .append(stack.getHoverName().copy().withColor(0xFFFFFF)));
-            } else {
-                // Item has no energy capability
-                lines.add(Component.literal("⚠ ").withColor(0xFFAA00)
-                        .append(stack.getHoverName().copy().withColor(0xFFFFFF))
-                        .append(Component.literal(" (no energy)").withColor(0xFF5555)));
             }
         }
     }
 
-    // ==================== Ticking Logic ====================
-
-    public static void serverTick(Level level, BlockPos pos, BlockState state, AncientChargerBlockEntity entity) {
-        // 1. Maintain Cache
-        if (level.getGameTime() - entity.lastCacheUpdate > CACHE_REFRESH_INTERVAL) {
-            entity.refreshNeighborCache(level, pos);
-        }
-
-        // 2. Perform Operations
-        entity.handleEnergyIO(level);
-
-        // 3. Charge Item in Dock
-        entity.chargeDockedItem();
-
-        // 4. Throttled sync (from base class)
-        entity.onUpdateServer();
-    }
-
-    private void chargeDockedItem() {
-        if (energyStorage.getEnergyStored() <= 0)
-            return;
-
-        net.minecraft.world.item.ItemStack stack = itemHandler.getStackInSlot(0);
-        if (stack.isEmpty())
-            return;
-
-        IEnergyStorage itemEnergy = stack.getCapability(Capabilities.EnergyStorage.ITEM);
-        if (itemEnergy != null && itemEnergy.canReceive()) {
-            int toTransfer = Math.min(MAX_TRANSFER, energyStorage.getEnergyStored());
-            int accepted = itemEnergy.receiveEnergy(toTransfer, false);
-            if (accepted > 0) {
-                energyStorage.extractEnergy(accepted, false);
-                // Force the ItemStackHandler to see the NBT change
-                itemHandler.setStackInSlot(0, stack);
+    @Override
+    protected void onUpdateClient() {
+        if (energy.getEnergyStored() > 0 && level != null) {
+            if (energy.getEnergyStored() < energy.getCapacity() && level.random.nextInt(4) == 0) {
+                double x = worldPosition.getX() + 0.5 + (level.random.nextDouble() - 0.5) * 0.4;
+                double y = worldPosition.getY() + 0.3 + level.random.nextDouble() * 0.4;
+                double z = worldPosition.getZ() + 0.5 + (level.random.nextDouble() - 0.5) * 0.4;
+                level.addParticle(ParticleTypes.ELECTRIC_SPARK, x, y, z, 0, 0.05, 0);
             }
         }
     }
 
-    public static void clientTick(Level level, BlockPos pos, BlockState state, AncientChargerBlockEntity entity) {
-        if (entity.energyStorage.getEnergyStored() > 0) {
-            // Charging particles when buffer has energy but isn't full
-            if (entity.energyStorage.getEnergyStored() < entity.energyStorage.getMaxEnergyStored()) {
-                if (level.random.nextInt(4) == 0) {
-                    double x = pos.getX() + 0.5 + (level.random.nextDouble() - 0.5) * 0.4;
-                    double y = pos.getY() + 0.3 + level.random.nextDouble() * 0.4;
-                    double z = pos.getZ() + 0.5 + (level.random.nextDouble() - 0.5) * 0.4;
-                    level.addParticle(ParticleTypes.ELECTRIC_SPARK, x, y, z, 0, 0.05, 0);
-                }
-            }
-
-            // Idle energy spark
-            if (level.random.nextInt(10) == 0) {
-                double rx = pos.getX() + 0.5 + (level.random.nextDouble() - 0.5);
-                double ry = pos.getY() + 0.5 + (level.random.nextDouble() - 0.5);
-                double rz = pos.getZ() + 0.5 + (level.random.nextDouble() - 0.5);
-                level.addParticle(ParticleTypes.ELECTRIC_SPARK, rx, ry, rz, 0, 0, 0);
-            }
-        }
-
-        // Item charging particles
-        if (!entity.itemHandler.getStackInSlot(0).isEmpty()) {
-            net.minecraft.world.item.ItemStack stack = entity.itemHandler.getStackInSlot(0);
-            IEnergyStorage itemEnergy = stack.getCapability(Capabilities.EnergyStorage.ITEM);
-            if (itemEnergy != null && itemEnergy.getEnergyStored() < itemEnergy.getMaxEnergyStored()) {
-                if (level.random.nextInt(2) == 0) {
-                    double x = pos.getX() + 0.5 + (level.random.nextDouble() - 0.5) * 0.3;
-                    double y = pos.getY() + 0.5;
-                    double z = pos.getZ() + 0.5 + (level.random.nextDouble() - 0.5) * 0.3;
-                    level.addParticle(ParticleTypes.WAX_ON, x, y, z, 0, 0.1, 0);
-                    level.addParticle(ParticleTypes.ENCHANT, x, y, z, 0, 0.15, 0);
-                }
-            }
-        }
+    @Override
+    public @NotNull Component getDisplayName() {
+        return Component.translatable("block.alientech.ancient_charger");
     }
 
-    // ==================== Optimized Operations ====================
-
-    private void refreshNeighborCache(Level level, BlockPos center) {
-        this.cachedCores.clear();
-        this.cachedBatteries.clear();
-
-        BlockPos.betweenClosedStream(center.offset(-1, -1, -1), center.offset(1, 1, 1))
-                .forEach(pos -> {
-                    if (pos.equals(center))
-                        return;
-                    if (!level.isLoaded(pos))
-                        return;
-
-                    BlockEntity be = level.getBlockEntity(pos);
-                    if (be == null)
-                        return;
-
-                    if (be instanceof PyramidCoreBlockEntity) {
-                        this.cachedCores.add(pos.immutable());
-                    } else if (be instanceof AncientBatteryBlockEntity) {
-                        this.cachedBatteries.add(pos.immutable());
-                    }
-                });
-
-        this.lastCacheUpdate = level.getGameTime();
+    @Nullable
+    @Override
+    public AbstractContainerMenu createMenu(int containerId, @NotNull Inventory playerInventory,
+            @NotNull Player player) {
+        return new AncientChargerMenu(containerId, playerInventory, this, this.data);
     }
 
-    private void handleEnergyIO(Level level) {
-        // Pull from Cores
-        if (energyStorage.getEnergyStored() < energyStorage.getMaxEnergyStored()) {
-            for (BlockPos corePos : cachedCores) {
-                if (!level.isLoaded(corePos))
-                    continue;
-
-                IEnergyStorage coreCap = level.getCapability(Capabilities.EnergyStorage.BLOCK, corePos, null);
-                if (coreCap != null && coreCap.canExtract()) {
-                    int pullAmount = Math.min(MAX_TRANSFER,
-                            energyStorage.getMaxEnergyStored() - energyStorage.getEnergyStored());
-                    EnergyUtils.pullEnergy(this.energyStorage, coreCap, pullAmount);
-                }
-            }
-        }
-
-        // Push to Batteries
-        if (energyStorage.getEnergyStored() > 0) {
-            for (BlockPos batPos : cachedBatteries) {
-                if (!level.isLoaded(batPos))
-                    continue;
-
-                IEnergyStorage batCap = level.getCapability(Capabilities.EnergyStorage.BLOCK, batPos, null);
-                if (batCap != null && batCap.canReceive()) {
-                    int pushAmount = Math.min(MAX_TRANSFER, energyStorage.getEnergyStored());
-                    EnergyUtils.pushEnergy(this.energyStorage, batCap, pushAmount);
-                }
-            }
-        }
+    public IItemHandler getItemHandler() {
+        return inventory.getHandler();
     }
-
-    // ==================== Persistence ====================
 
     @Override
     public void loadAdditional(@NotNull CompoundTag tag, @NotNull HolderLookup.Provider provider) {
         super.loadAdditional(tag, provider);
-        itemHandler.deserializeNBT(provider, tag.getCompound("Inventory"));
     }
 
     @Override
     public void saveAdditional(@NotNull CompoundTag tag, @NotNull HolderLookup.Provider provider) {
         super.saveAdditional(tag, provider);
-        tag.put("Inventory", itemHandler.serializeNBT(provider));
     }
 }

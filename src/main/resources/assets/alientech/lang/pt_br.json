@@ -6,7 +6,6 @@
   "item.alientech.ancient_ankh": "Ankh Ancestral",
   "item.alientech.concentrated_substrate": "Substrato Concentrado",
   "item.alientech.exotic_substrate": "Substrato Exótico",
-  "item.alientech.graviton_contained": "Gravíton Contido",
   "item.alientech.horus_eye": "Olho de Hórus",
   "item.alientech.horus_eye_activated": "Olho de Hórus Ativado",
   "item.alientech.pharaoh_sword": "Espada do Faraó",
@@ -58,5 +57,11 @@
   "message.alientech.evolution_insufficient_entropy": "Entropia insuficiente armazenada para evoluir.",
   "message.alientech.evolution_max_stage": "Você atingiu o estágio máximo de evolução.",
   "container.alientech.decay_chamber_controller": "Câmara de Decaimento",
-  "message.alientech.decay_immune": "Esta entidade é imune ao decaimento!"
+  "message.alientech.decay_immune": "Esta entidade é imune ao decaimento!",
+  "item.alientech.pocket_prison.captured": "Capturado: %s",
+  "item.alientech.pocket_prison.released": "Libertado: %s",
+  "item.alientech.pocket_prison.contains": "Contém: %s",
+  "item.alientech.pocket_prison.health": "Vida: %s",
+  "item.alientech.pocket_prison.empty": "Vazio",
+  "item.alientech.pocket_prison.already_occupied": "A prisão já está ocupada!"
 }

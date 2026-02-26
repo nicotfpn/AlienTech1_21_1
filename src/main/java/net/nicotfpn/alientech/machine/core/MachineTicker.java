@@ -26,6 +26,8 @@ public class MachineTicker {
     private final ToIntFunction<ItemStack> burnTimeFunction;
     private final int[] outputSlots;
     private final SlotAccessRules rules;
+    private final int energyPushRate;
+    private final int energyPullRate;
 
     /**
      * @param fuelSlot         slot index for fuel (-1 if no fuel slot)
@@ -33,15 +35,20 @@ public class MachineTicker {
      * @param burnTimeFunction function returning burn time in ticks for a fuel item
      * @param outputSlots      indices of output slots for auto-push
      * @param rules            slot access rules for sided automation
+     * @param energyPushRate   max FE/t pushed to neighbors
+     * @param energyPullRate   max FE/t pulled from neighbors
      */
     public MachineTicker(int fuelSlot, Predicate<ItemStack> fuelValidator,
             ToIntFunction<ItemStack> burnTimeFunction,
-            int[] outputSlots, SlotAccessRules rules) {
+            int[] outputSlots, SlotAccessRules rules,
+            int energyPushRate, int energyPullRate) {
         this.fuelSlot = fuelSlot;
         this.fuelValidator = fuelValidator;
         this.burnTimeFunction = burnTimeFunction;
         this.outputSlots = outputSlots;
         this.rules = rules;
+        this.energyPushRate = energyPushRate;
+        this.energyPullRate = energyPullRate;
     }
 
     // Fractional ticks accumulator to support non-integer speed multipliers
@@ -94,7 +101,15 @@ public class MachineTicker {
         // Step 3: Tick down fuel burn time
         energy.tickBurnTime();
 
-        // Step 4: Auto-push outputs to adjacent inventories
+        // Step 4: Auto-push/pull energy to adjacent blocks
+        if (energyPushRate > 0) {
+            automation.autoPushEnergy(level, pos, energy, energyPushRate);
+        }
+        if (energyPullRate > 0) {
+            automation.autoPullEnergy(level, pos, energy, energyPullRate);
+        }
+
+        // Step 5: Auto-push outputs to adjacent inventories
         automation.autoPushOutputs(level, pos, inventory, outputSlots, rules);
 
         return successfulTicks;

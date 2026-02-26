@@ -8,6 +8,8 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import net.nicotfpn.alientech.AlienTech;
+import net.nicotfpn.alientech.ui.sync.AlienContainerMenu;
+import net.minecraft.world.entity.player.Player;
 
 import net.nicotfpn.alientech.block.entity.ISideConfigurable;
 
@@ -20,6 +22,12 @@ public class ModNetworking {
     @SubscribeEvent
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(AlienTech.MOD_ID);
+
+        // Sync Data Packet (server -> client GUI sync)
+        registrar.playToClient(
+                SyncDataPacket.TYPE,
+                SyncDataPacket.STREAM_CODEC,
+                ModNetworking::handleSyncDataClient);
 
         // Side config packet (client -> server)
         registrar.playToServer(
@@ -87,9 +95,9 @@ public class ModNetworking {
             }
 
             // Look up ability
-            net.nicotfpn.alientech.evolution.ability.IEvolutionAbility ability = 
-                net.nicotfpn.alientech.evolution.ability.AbilityRegistry.get(packet.abilityId());
-            
+            net.nicotfpn.alientech.evolution.ability.IEvolutionAbility ability = net.nicotfpn.alientech.evolution.ability.AbilityRegistry
+                    .get(packet.abilityId());
+
             if (ability == null) {
                 // Invalid ability ID - ignore (client may have outdated registry)
                 return;
@@ -118,7 +126,19 @@ public class ModNetworking {
      * if (blockEntity instanceof AncientBatteryBlockEntity battery) {
      * // battery.toggleMode(); // Method removed
      * }
-     * });
      * }
+     * 
+     * /**
+     * Handles receiving compressed GUI sync payloads.
      */
+    private static void handleSyncDataClient(SyncDataPacket packet, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            Player player = context.player();
+            if (player != null && player.containerMenu instanceof AlienContainerMenu alienMenu) {
+                if (alienMenu.containerId == packet.containerId()) {
+                    alienMenu.handleSync(packet.payloads());
+                }
+            }
+        });
+    }
 }

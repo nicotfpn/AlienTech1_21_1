@@ -54,7 +54,7 @@ public class AnkhItem extends Item {
                 }
 
                 // Tenta ativar a pirâmide
-                if (pyramidCore.activatePyramid()) {
+                if (pyramidCore.activatePyramidWithAnkh(player)) {
                     // Sucesso! Tocar som e partículas
                     level.playSound(null, pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5,
                             SoundEvents.BEACON_ACTIVATE, SoundSource.BLOCKS, 1.0f, 1.0f);
@@ -69,7 +69,7 @@ public class AnkhItem extends Item {
                     // Falha na ativação - verificar o motivo
                     if (pyramidCore.getItemHandler().getStackInSlot(0).isEmpty()) {
                         // Falta o Alloy
-                        player.sendSystemMessage(Component.translatable("message.alientech.missing_graviton"));
+                        player.sendSystemMessage(Component.translatable("message.alientech.missing_alloy"));
                     } else {
                         // Estrutura inválida
                         player.sendSystemMessage(Component.translatable("message.alientech.invalid_structure"));

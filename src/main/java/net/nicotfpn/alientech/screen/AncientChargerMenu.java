@@ -22,7 +22,7 @@ public class AncientChargerMenu extends AbstractContainerMenu {
 
     public AncientChargerMenu(int containerId, Inventory inv, FriendlyByteBuf extraData) {
         this(containerId, inv, inv.player.level().getBlockEntity(extraData.readBlockPos()),
-                new SimpleContainerData(8));
+                new SimpleContainerData(12));
     }
 
     public AncientChargerMenu(int containerId, Inventory inv, BlockEntity entity, ContainerData data) {
@@ -31,8 +31,8 @@ public class AncientChargerMenu extends AbstractContainerMenu {
         blockEntity = ((AncientChargerBlockEntity) entity);
         this.data = data;
 
-        // Slot 0: Charge Slot
-        this.addSlot(new SlotItemHandler(blockEntity.getItemHandler(), 0, 82, 37));
+        // Slot 0: Charge Slot (from alientech_gui_gen.py: centered in machine area, x=91, y=41)
+        this.addSlot(new SlotItemHandler(blockEntity.getItemHandler(), 0, 91, 41));
 
         addDataSlots(data);
 
@@ -41,13 +41,19 @@ public class AncientChargerMenu extends AbstractContainerMenu {
     }
 
     public int getEnergyStored() {
-        // Base class data: 4=low, 5=high
-        return net.nicotfpn.alientech.util.EnergyUtils.fromBits(data.get(4), data.get(5));
+        return data.get(4) | (data.get(5) << 16);
     }
 
     public int getMaxEnergy() {
-        // Base class data: 6=low, 7=high
-        return net.nicotfpn.alientech.util.EnergyUtils.fromBits(data.get(6), data.get(7));
+        return data.get(6) | (data.get(7) << 16);
+    }
+
+    public int getEntropy() {
+        return data.get(8) | (data.get(9) << 16);
+    }
+
+    public int getMaxEntropy() {
+        return data.get(10) | (data.get(11) << 16);
     }
 
     public float getEnergyPercentage() {

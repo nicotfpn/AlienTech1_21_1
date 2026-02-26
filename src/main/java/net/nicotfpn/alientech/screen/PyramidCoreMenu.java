@@ -28,8 +28,8 @@ public class PyramidCoreMenu extends AbstractContainerMenu {
         blockEntity = ((PyramidCoreBlockEntity) entity);
         this.data = data;
 
-        // Eye of Horus slot
-        this.addSlot(new SlotItemHandler(blockEntity.getItemHandler(), 0, 82, 37));
+        // Eye of Horus slot (from alientech_gui_gen.py: x=78, y=41)
+        this.addSlot(new SlotItemHandler(blockEntity.getItemHandler(), 0, 78, 41));
 
         addPlayerInventory(inv);
         addPlayerHotbar(inv);
@@ -86,33 +86,41 @@ public class PyramidCoreMenu extends AbstractContainerMenu {
     // data[0] = energy low bits, data[1] = energy high bits
     // data[2] = isActive (0 ou 1), data[3] = alloy count
     public int getEnergyStored() {
-        return data.get(0) | (data.get(1) << 16);
+        return data.get(4) | (data.get(5) << 16);
     }
 
     public int getMaxEnergy() {
-        return net.nicotfpn.alientech.util.EnergyUtils.fromBits(data.get(4), data.get(5));
+        return data.get(6) | (data.get(7) << 16);
+    }
+
+    public int getEntropy() {
+        return data.get(8) | (data.get(9) << 16);
+    }
+
+    public int getMaxEntropy() {
+        return data.get(10) | (data.get(11) << 16);
     }
 
     public boolean isActive() {
-        return data.get(2) != 0;
+        return data.get(12) != 0;
     }
 
     public int getAlloyCount() {
-        return data.get(3);
+        return data.get(13);
     }
 
     private void addPlayerInventory(Inventory pPlayerInventory) {
         for (int i = 0; i < PLAYER_INVENTORY_ROW_COUNT; i++) {
             for (int l = 0; l < PLAYER_INVENTORY_COLUMN_COUNT; l++) {
                 this.addSlot(new net.minecraft.world.inventory.Slot(pPlayerInventory,
-                        l + i * PLAYER_INVENTORY_COLUMN_COUNT + 9, 10 + l * 18, 86 + i * 18));
+                        l + i * PLAYER_INVENTORY_COLUMN_COUNT + 9, 8 + l * 18, 84 + i * 18));
             }
         }
     }
 
     private void addPlayerHotbar(Inventory pPlayerInventory) {
         for (int i = 0; i < HOTBAR_SLOT_COUNT; i++) {
-            this.addSlot(new net.minecraft.world.inventory.Slot(pPlayerInventory, i, 10 + i * 18, 144));
+            this.addSlot(new net.minecraft.world.inventory.Slot(pPlayerInventory, i, 8 + i * 18, 142));
         }
     }
 }
