@@ -4,6 +4,7 @@ build/
 bin/
 out/
 output/
+*.class
 
 # IDE files
 .idea/
@@ -22,8 +23,7 @@ output/
 /run-data/
 /logs/
 /annotation-processor/bin/
-datagen_error.log
-datagen_info.log
+*.log
 
 # Temporary/Distribution files
 Mekanism*.jar
@@ -43,3 +43,6 @@ __pycache__/
 
 # VS Code
 .vscode/
+
+# Personal/Miscellaneous
+tasks/
