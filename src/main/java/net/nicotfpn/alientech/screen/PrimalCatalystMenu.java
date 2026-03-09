@@ -3,34 +3,35 @@ package net.nicotfpn.alientech.screen;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.inventory.ContainerLevelAccess;
-import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.neoforge.items.SlotItemHandler;
 import net.nicotfpn.alientech.block.ModBlocks;
 import net.nicotfpn.alientech.block.entity.PrimalCatalystBlockEntity;
+import net.nicotfpn.alientech.ui.sync.AlienContainerMenu;
+import net.nicotfpn.alientech.ui.sync.impl.SyncableLong;
 
 /**
  * Container menu for the Primal Catalyst.
  *
  * Slot layout (5 machine slots + 36 player slots):
  * 0, 1, 2 = Input slots (top row)
- * 3 = Fuel slot (middle-left, coal_block only)
+ * 3 = Fuel slot (middle-left, coal_block only - deprecated/inert)
  * 4 = Output slot (right side)
- *
- * Data sync (6 values):
- * 0 = progress, 1 = maxProgress
- * 2 = burnTime, 3 = maxBurnTime
- * 4 = energy, 5 = maxEnergy
  */
-public class PrimalCatalystMenu extends AbstractContainerMenu {
+public class PrimalCatalystMenu extends AlienContainerMenu {
 
     public final PrimalCatalystBlockEntity blockEntity;
-    private final ContainerData data;
+
+    // ==================== Sync Trackers ====================
+    private final SyncableLong progress;
+    private final SyncableLong maxProgress;
+    private final SyncableLong energy;
+    private final SyncableLong maxEnergy;
+    private final SyncableLong entropy;
+    private final SyncableLong maxEntropy;
 
     // ==================== Slot Layout Constants ====================
     private static final int TE_SLOT_COUNT = 5;
@@ -40,30 +41,41 @@ public class PrimalCatalystMenu extends AbstractContainerMenu {
     // ==================== Constructor (Network) ====================
 
     public PrimalCatalystMenu(int containerId, Inventory inv, FriendlyByteBuf extraData) {
-        this(containerId, inv, inv.player.level().getBlockEntity(extraData.readBlockPos()),
-                new SimpleContainerData(12));
+        this(containerId, inv, inv.player.level().getBlockEntity(extraData.readBlockPos()));
     }
 
     // ==================== Constructor (Server) ====================
 
-    public PrimalCatalystMenu(int containerId, Inventory inv, BlockEntity entity, ContainerData data) {
-        super(ModMenuTypes.PRIMAL_CATALYST_MENU.get(), containerId);
+    public PrimalCatalystMenu(int containerId, Inventory inv, BlockEntity entity) {
+        super(ModMenuTypes.PRIMAL_CATALYST_MENU.get(), containerId, inv.player);
         blockEntity = (PrimalCatalystBlockEntity) entity;
-        this.data = data;
 
         // Input slots: vertical column (from alientech_gui_gen.py: x=66, y=23/41/59)
-        this.addSlot(new SlotItemHandler(blockEntity.getInventory().getHandler(), 0, 66, 23)); // Input 1
-        this.addSlot(new SlotItemHandler(blockEntity.getInventory().getHandler(), 1, 66, 41)); // Input 2
-        this.addSlot(new SlotItemHandler(blockEntity.getInventory().getHandler(), 2, 66, 59)); // Input 3
+        this.addSlot(new SlotItemHandler(blockEntity.getItemHandler(), 0, 66, 23)); // Input 1
+        this.addSlot(new SlotItemHandler(blockEntity.getItemHandler(), 1, 66, 41)); // Input 2
+        this.addSlot(new SlotItemHandler(blockEntity.getItemHandler(), 2, 66, 59)); // Input 3
 
-        // Fuel slot: under energy bar (from alientech_gui_gen.py: positioned near entropy bar)
-        this.addSlot(new FuelSlot(blockEntity.getInventory().getHandler(), 3, 10, 56));
+        // Fuel slot: under energy bar (from alientech_gui_gen.py: positioned near
+        // entropy bar)
+        this.addSlot(new FuelSlot(blockEntity.getItemHandler(), 3, 10, 56));
 
         // Output slot: right side (from alientech_gui_gen.py: x=116, y=41)
-        this.addSlot(new OutputSlot(blockEntity.getInventory().getHandler(), 4, 116, 41));
+        this.addSlot(new OutputSlot(blockEntity.getItemHandler(), 4, 116, 41));
 
-        // Sync all data values (extended)
-        addDataSlots(data);
+        // Sync Data Registration
+        this.progress = new SyncableLong(() -> (long) blockEntity.processingComponent.getProgress(), null);
+        this.maxProgress = new SyncableLong(() -> (long) blockEntity.processingComponent.getMaxProgress(), null);
+        this.energy = new SyncableLong(() -> (long) blockEntity.getEnergyStorage().getEnergyStored(), null);
+        this.maxEnergy = new SyncableLong(() -> (long) blockEntity.getEnergyStorage().getMaxEnergyStored(), null);
+        this.entropy = new SyncableLong(() -> blockEntity.entropyComponent.getEntropyStored(), null);
+        this.maxEntropy = new SyncableLong(() -> blockEntity.entropyComponent.getMaxEntropy(), null);
+
+        track(progress);
+        track(maxProgress);
+        track(energy);
+        track(maxEnergy);
+        track(entropy);
+        track(maxEntropy);
 
         // Player inventory and hotbar
         addPlayerInventory(inv);
@@ -73,48 +85,46 @@ public class PrimalCatalystMenu extends AbstractContainerMenu {
     // ==================== Data Accessors ====================
 
     public boolean isCrafting() {
-        return data.get(0) > 0;
+        return progress.get() > 0;
     }
 
     public int getScaledProgress() {
-        int progress = data.get(0);
-        int maxProgress = data.get(1);
+        long p = progress.get();
+        long maxP = maxProgress.get();
         int barWidth = 24; // pixel width of progress arrow (from alientech_gui_gen.py)
-        return maxProgress != 0 && progress != 0 ? progress * barWidth / maxProgress : 0;
+        return maxP != 0 && p != 0 ? (int) (p * barWidth / maxP) : 0;
     }
 
+    // Deprecated for Primal Catalyst ECS (fuel no longer supported)
     public boolean isBurning() {
-        return data.get(2) > 0;
+        return false;
     }
 
     public int getScaledBurnTime() {
-        int burnTime = data.get(2);
-        int maxBurnTime = data.get(3);
-        int flameHeight = 14; // pixel height of flame icon
-        return maxBurnTime != 0 && burnTime != 0 ? burnTime * flameHeight / maxBurnTime : 0;
+        return 0;
     }
 
     public int getScaledEnergy() {
-        int energy = getEnergy();
-        int maxEnergy = getMaxEnergy();
+        long e = energy.get();
+        long maxE = maxEnergy.get();
         int barHeight = 44; // pixel height of energy bar (from mc_gui_generator.py)
-        return maxEnergy != 0 && energy != 0 ? (int) ((long) energy * barHeight / maxEnergy) : 0;
+        return maxE != 0 && e != 0 ? (int) (e * barHeight / maxE) : 0;
     }
 
-    public int getEnergy() {
-        return net.nicotfpn.alientech.util.EnergyUtils.fromBits(data.get(4), data.get(5));
+    public long getEnergy() {
+        return energy.get();
     }
 
-    public int getMaxEnergy() {
-        return net.nicotfpn.alientech.util.EnergyUtils.fromBits(data.get(6), data.get(7));
+    public long getMaxEnergy() {
+        return maxEnergy.get();
     }
 
-    public int getEntropy() {
-        return net.nicotfpn.alientech.util.EnergyUtils.fromBits(data.get(8), data.get(9));
+    public long getEntropy() {
+        return entropy.get();
     }
 
-    public int getMaxEntropy() {
-        return net.nicotfpn.alientech.util.EnergyUtils.fromBits(data.get(10), data.get(11));
+    public long getMaxEntropy() {
+        return maxEntropy.get();
     }
 
     // ==================== Shift-Click Transfer ====================
@@ -135,8 +145,7 @@ public class PrimalCatalystMenu extends AbstractContainerMenu {
                 return ItemStack.EMPTY;
             }
         } else {
-            // Moving FROM player TO machine
-            // Try input slots
+            // Moving FROM player TO machine (Try input slots: 0, 1, 2)
             if (!moveItemStackTo(sourceStack, 0, 3, false)) {
                 return ItemStack.EMPTY;
             }
@@ -191,7 +200,7 @@ public class PrimalCatalystMenu extends AbstractContainerMenu {
     }
 
     /**
-     * Fuel slot: only accepts valid fuel items (coal_block).
+     * Fuel slot: inert for Primal Catalyst in ECS architecture.
      */
     private static class FuelSlot extends SlotItemHandler {
         public FuelSlot(net.neoforged.neoforge.items.IItemHandler handler, int index, int x, int y) {

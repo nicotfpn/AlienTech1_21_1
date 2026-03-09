@@ -7,147 +7,119 @@ import net.nicotfpn.alientech.util.AlienTechDebug;
  * Concrete implementation of {@link IEntropyHandler}.
  * <p>
  * Stores entropy with configurable capacity, insert/extract limits, and access
- * mode.
+ * mode. All values use {@code long} to prevent overflow at high tiers.
  * All operations are clamped — no overflow, no underflow, no negative values.
  * <p>
- * NBT key: "Entropy" (single int).
- * <p>
- * Thread safety: All mutation methods are internally consistent (no torn
- * reads),
- * but external synchronization is needed for cross-thread access if applicable.
+ * NBT key: "Entropy" (long).
  */
 public class EntropyStorage implements IEntropyHandler {
 
-    private int entropy;
-    private final int capacity;
-    private final int maxInsert;
-    private final int maxExtract;
+    private long entropy;
+    private final long capacity;
+    private final long maxInsert;
+    private final long maxExtract;
     private final boolean allowInsert;
     private final boolean allowExtract;
     private final Runnable onChanged;
 
     /**
      * Full constructor with fine-grained control.
-     *
-     * @param capacity   maximum entropy capacity (must be > 0)
-     * @param maxInsert  maximum entropy insertable per operation (0 = no limit
-     *                   beyond capacity)
-     * @param maxExtract maximum entropy extractable per operation (0 = no limit
-     *                   beyond stored)
-     * @param canInsert  whether this storage accepts entropy
-     * @param canExtract whether this storage provides entropy
-     * @param onChanged  callback invoked on any mutation (for dirty marking / sync)
      */
-    public EntropyStorage(int capacity, int maxInsert, int maxExtract,
+    public EntropyStorage(long capacity, long maxInsert, long maxExtract,
             boolean canInsert, boolean canExtract, Runnable onChanged) {
-        this.capacity = Math.max(1, capacity);
-        this.maxInsert = Math.max(0, maxInsert);
-        this.maxExtract = Math.max(0, maxExtract);
+        this.capacity = Math.max(1L, capacity);
+        this.maxInsert = Math.max(0L, maxInsert);
+        this.maxExtract = Math.max(0L, maxExtract);
         this.allowInsert = canInsert;
         this.allowExtract = canExtract;
         this.onChanged = onChanged != null ? onChanged : () -> {
         };
-        this.entropy = 0;
+        this.entropy = 0L;
     }
 
     /**
      * Convenience constructor for a bidirectional storage with unlimited transfer
      * rates.
      */
+    public EntropyStorage(long capacity, Runnable onChanged) {
+        this(capacity, 0L, 0L, true, true, onChanged);
+    }
+
+    /**
+     * Legacy int-capacity constructor for backwards-compat call sites.
+     */
     public EntropyStorage(int capacity, Runnable onChanged) {
-        this(capacity, 0, 0, true, true, onChanged);
+        this((long) capacity, 0L, 0L, true, true, onChanged);
+    }
+
+    /**
+     * Legacy full int constructor for backwards-compat call sites.
+     */
+    public EntropyStorage(int capacity, int maxInsert, int maxExtract,
+            boolean canInsert, boolean canExtract, Runnable onChanged) {
+        this((long) capacity, (long) maxInsert, (long) maxExtract, canInsert, canExtract, onChanged);
     }
 
     // ==================== IEntropyHandler ====================
 
     @Override
-    public int getEntropy() {
+    public long getEntropy() {
         return entropy;
     }
 
     @Override
-    public int getMaxEntropy() {
+    public long getMaxEntropy() {
         return capacity;
     }
 
     @Override
-    public int insertEntropy(int amount, boolean simulate) {
-        // Validate input
-        if (!allowInsert || amount <= 0) {
-            return 0;
+    public long insertEntropy(long amount, boolean simulate) {
+        if (!allowInsert || amount <= 0L) {
+            return 0L;
         }
 
-        // Prevent integer overflow
-        if (amount < 0 || entropy < 0 || capacity < 0) {
-            return 0; // Invalid state
+        long space = capacity - entropy;
+        if (space <= 0L) {
+            return 0L;
         }
 
-        int space = capacity - entropy;
-        if (space <= 0) {
-            return 0; // Full
-        }
-
-        int toInsert = Math.min(amount, space);
-
-        // Apply transfer rate limit if configured
-        if (maxInsert > 0) {
+        long toInsert = Math.min(amount, space);
+        if (maxInsert > 0L) {
             toInsert = Math.min(toInsert, maxInsert);
         }
-
-        // Final validation before commit
-        if (toInsert <= 0) {
-            return 0;
+        if (toInsert <= 0L) {
+            return 0L;
         }
 
-        // Prevent overflow
-        if (entropy > Integer.MAX_VALUE - toInsert) {
-            toInsert = Integer.MAX_VALUE - entropy;
-            if (toInsert <= 0) {
-                return 0;
-            }
-        }
-
-        if (!simulate && toInsert > 0) {
+        if (!simulate) {
             entropy += toInsert;
-            // Validate state after mutation
             validateState();
             onChanged.run();
-
-            // inserted entropy (debug logging removed)
         }
         return toInsert;
     }
 
     @Override
-    public int extractEntropy(int amount, boolean simulate) {
-        // Validate input
-        if (!allowExtract || amount <= 0) {
-            return 0;
+    public long extractEntropy(long amount, boolean simulate) {
+        if (!allowExtract || amount <= 0L) {
+            return 0L;
+        }
+        if (entropy <= 0L) {
+            return 0L;
         }
 
-        // Prevent negative entropy
-        if (entropy <= 0) {
-            return 0; // Empty
-        }
-
-        int toExtract = Math.min(amount, entropy);
-
-        // Apply transfer rate limit if configured
-        if (maxExtract > 0) {
+        long toExtract = Math.min(amount, entropy);
+        if (maxExtract > 0L) {
             toExtract = Math.min(toExtract, maxExtract);
         }
-
-        // Final validation before commit
-        if (toExtract <= 0 || toExtract > entropy) {
-            return 0;
+        if (toExtract <= 0L || toExtract > entropy) {
+            return 0L;
         }
 
-        if (!simulate && toExtract > 0) {
+        if (!simulate) {
             entropy -= toExtract;
-            // Validate state after mutation
             validateState();
             onChanged.run();
-
             AlienTechDebug.ENTROPY.log("Extracted {} entropy (remaining: {}/{})", toExtract, entropy, capacity);
         }
         return toExtract;
@@ -168,17 +140,16 @@ public class EntropyStorage implements IEntropyHandler {
     /**
      * Set entropy directly. Used for client-side sync and NBT deserialization.
      * Clamped to [0, capacity].
-     * 
-     * @param value the entropy value to set (will be clamped)
+     */
+    public void setEntropy(long value) {
+        this.entropy = Math.max(0L, Math.min(value, capacity));
+    }
+
+    /**
+     * Legacy int overload for backwards-compat call sites.
      */
     public void setEntropy(int value) {
-        // Validate capacity is valid
-        if (capacity <= 0) {
-            this.entropy = 0;
-            return;
-        }
-        // Clamp to valid range and prevent negative values
-        this.entropy = Math.max(0, Math.min(Math.max(0, value), capacity));
+        setEntropy((long) value);
     }
 
     // ==================== NBT Persistence ====================
@@ -187,21 +158,24 @@ public class EntropyStorage implements IEntropyHandler {
      * Save entropy value to the given tag.
      */
     public void save(CompoundTag tag) {
-        tag.putInt("Entropy", entropy);
+        tag.putLong("Entropy", entropy);
     }
 
     /**
-     * Load entropy value from the given tag.
+     * Load entropy value from the given tag. Supports both old int and new long
+     * keys.
      */
     public void load(CompoundTag tag) {
-        if (tag != null && tag.contains("Entropy")) {
-            int loaded = tag.getInt("Entropy");
-            setEntropy(loaded);
-            // Validate after load
+        if (tag == null) {
+            entropy = 0L;
+            return;
+        }
+        if (tag.contains("Entropy")) {
+            // getLong works for both putInt and putLong values
+            setEntropy(tag.getLong("Entropy"));
             validateState();
         } else {
-            // No entropy data - reset to 0
-            entropy = 0;
+            entropy = 0L;
         }
     }
 
@@ -211,9 +185,9 @@ public class EntropyStorage implements IEntropyHandler {
      * @return the fill ratio as a float [0.0, 1.0]
      */
     public float getFillRatio() {
-        if (capacity <= 0)
+        if (capacity <= 0L)
             return 0f;
-        return (float) entropy / capacity;
+        return (float) entropy / (float) capacity;
     }
 
     /**
@@ -227,20 +201,16 @@ public class EntropyStorage implements IEntropyHandler {
      * @return true if entropy <= 0
      */
     public boolean isEmpty() {
-        return entropy <= 0;
+        return entropy <= 0L;
     }
 
     /**
-     * Internal state validation method.
-     * Ensures entropy is clamped to [0, capacity].
-     * Called after every mutation to guarantee invariants.
+     * Internal state validation — clamps entropy to [0, capacity].
      */
     public void validateState() {
-        if (entropy < 0) {
-            entropy = 0;
-        }
-        if (entropy > capacity) {
+        if (entropy < 0L)
+            entropy = 0L;
+        if (entropy > capacity)
             entropy = capacity;
-        }
     }
 }

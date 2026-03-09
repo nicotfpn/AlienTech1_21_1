@@ -1,23 +1,21 @@
 package net.nicotfpn.alientech.block.entity;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.Containers;
-import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.items.IItemHandler;
 import net.nicotfpn.alientech.Config;
-import net.nicotfpn.alientech.block.entity.base.AbstractMachineBlockEntity;
 import net.nicotfpn.alientech.item.ModItems;
-import net.nicotfpn.alientech.machine.core.IMachineProcess;
-import net.nicotfpn.alientech.machine.core.SlotAccessRules;
+import net.nicotfpn.alientech.machine.core.AlienMachineBlockEntity;
+import net.nicotfpn.alientech.machine.core.component.EnergyComponent;
+import net.nicotfpn.alientech.machine.core.component.InventoryComponent;
+import net.nicotfpn.alientech.machine.core.component.SideConfigComponent;
+import net.nicotfpn.alientech.machine.core.component.AutoTransferComponent;
 import net.nicotfpn.alientech.machine.turbine.QuantumVacuumTurbineBlockEntity;
 import net.nicotfpn.alientech.pyramid.PyramidNetwork;
 import net.nicotfpn.alientech.pyramid.PyramidStructureValidator;
@@ -25,40 +23,49 @@ import net.nicotfpn.alientech.pyramid.PyramidTier;
 import net.nicotfpn.alientech.screen.PyramidCoreMenu;
 import net.nicotfpn.alientech.util.SafeNBT;
 import net.nicotfpn.alientech.util.StateValidator;
+import net.neoforged.neoforge.items.IItemHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
-import java.util.function.Predicate;
-import java.util.function.ToIntFunction;
 
 /**
  * Pyramid Core — The central brain of a pyramid structure.
  * Handles structure validation, entropy generation, and turbine boosting.
- * Ported to AbstractMachineBlockEntity framework.
- * 
- * NEW MECHANICS v2.0:
+ * <p>
+ * ECS Architecture:
+ * - {@link InventoryComponent}: 2 slots (ISA + Biomass)
+ * - {@link EnergyComponent}: FE buffer (for comparator output)
+ * <p>
+ * Mechanics:
  * - Requires Entropy Biomass to run (consumed over time)
  * - Inertial Stability Alloy enables infinite production until turned off
  * - Tracks owner who activated the pyramid
  */
-public class PyramidCoreBlockEntity extends AbstractMachineBlockEntity implements IMachineProcess, SlotAccessRules {
+public class PyramidCoreBlockEntity extends AlienMachineBlockEntity implements net.minecraft.world.MenuProvider {
 
+    // ==================== Slot Constants ====================
     public static final int ALLOY_SLOT = 0;
     public static final int BIOMASS_SLOT = 1;
     private static final int SLOT_COUNT = 2;
 
-    // State
+    // ==================== Components ====================
+    public final InventoryComponent inventoryComponent;
+    public final EnergyComponent energyComponent;
+    public final SideConfigComponent sideConfig;
+    public final AutoTransferComponent autoTransfer;
+
+    // ==================== State ====================
     private boolean isActive = false;
     private boolean structureValid = false;
     private int structureCheckCooldown = 0;
     private PyramidTier pyramidTier = PyramidTier.NONE;
     private float boostMultiplier = 1.0f;
-    
-    // Owner tracking - the player who activated the pyramid
+
+    // Owner tracking
     private UUID ownerUUID = null;
     private String ownerName = null;
-    
+
     // Biomass consumption tracker
     private int biomassTicks = 0;
     private static final int BIOMASS_CONSUME_INTERVAL = 200; // ~10 seconds
@@ -66,18 +73,49 @@ public class PyramidCoreBlockEntity extends AbstractMachineBlockEntity implement
     // ==================== Constructor ====================
 
     public PyramidCoreBlockEntity(BlockPos pos, BlockState state) {
-        super(ModBlockEntities.PYRAMID_CORE_BE.get(), pos, state,
+        super(ModBlockEntities.PYRAMID_CORE_BE.get(), pos, state);
+
+        // 2 slots: Alloy (ISA) + Biomass
+        this.inventoryComponent = new InventoryComponent(this, SLOT_COUNT, this::isSlotValid);
+        registerComponent(this.inventoryComponent);
+
+        // FE buffer for comparator output
+        this.energyComponent = new EnergyComponent(this,
                 Config.PYRAMID_CORE_CAPACITY.get(),
                 Config.PYRAMID_CORE_CAPACITY.get(),
-                Config.PYRAMID_CORE_CAPACITY.get(),
-                SLOT_COUNT);
+                Config.PYRAMID_CORE_CAPACITY.get());
+        registerComponent(this.energyComponent);
+
+        // Wave 3: Side Configuration
+        this.sideConfig = new SideConfigComponent(this);
+        registerComponent(this.sideConfig);
+
+        // Wave 3: Auto Transfer
+        this.autoTransfer = new AutoTransferComponent(this);
+        this.autoTransfer.injectSideConfig(this.sideConfig);
+        registerComponent(this.autoTransfer);
+
+        // Inicializar wrappers
+        initSidedWrappers();
     }
 
-    // ==================== Tick Logic Overrides ====================
+    // ==================== Slot Validation ====================
+
+    private boolean isSlotValid(int slot, @NotNull ItemStack stack) {
+        if (slot == ALLOY_SLOT)
+            return stack.is(ModItems.INERTIAL_STABILITY_ALLOY.get());
+        if (slot == BIOMASS_SLOT)
+            return stack.is(ModItems.ENTROPY_BIOMASS.get());
+        return false;
+    }
+
+    // ==================== Core Tick Logic ====================
 
     @Override
-    protected void onUpdateServer() {
-        if (level == null)
+    public void tickServer() {
+        super.tickServer(); // Ticks ECS components
+
+        if (level == null || level.isClientSide)
             return;
 
         // 1. Throttled Structure Validation & Boost Broadcast
@@ -91,21 +129,18 @@ public class PyramidCoreBlockEntity extends AbstractMachineBlockEntity implement
 
                 // Entropy Generation Logic
                 if (isActive) {
-                    // Check if we have ISA for infinite production
-                    ItemStack alloyStack = inventory.getHandler().getStackInSlot(ALLOY_SLOT);
+                    ItemStack alloyStack = inventoryComponent.getHandler().getStackInSlot(ALLOY_SLOT);
                     boolean hasISA = !alloyStack.isEmpty() && alloyStack.is(ModItems.INERTIAL_STABILITY_ALLOY.get());
-                    
-                    // Check for biomass
-                    ItemStack biomassStack = inventory.getHandler().getStackInSlot(BIOMASS_SLOT);
+
+                    ItemStack biomassStack = inventoryComponent.getHandler().getStackInSlot(BIOMASS_SLOT);
                     boolean hasBiomass = !biomassStack.isEmpty() && biomassStack.is(ModItems.ENTROPY_BIOMASS.get());
-                    
-                    // Either ISA (infinite) OR biomass (consumed) is needed to produce
+
                     if (hasISA || hasBiomass) {
                         int generation = Config.PYRAMID_CORE_GENERATION.get();
                         if (generation > 0) {
                             PyramidNetwork.get(level).insertEntropy(generation, false);
                         }
-                        
+
                         // Consume biomass if not using ISA
                         if (!hasISA && hasBiomass) {
                             biomassTicks++;
@@ -115,7 +150,6 @@ public class PyramidCoreBlockEntity extends AbstractMachineBlockEntity implement
                             }
                         }
                     } else {
-                        // No fuel - deactivate
                         setActive(false);
                     }
                 }
@@ -125,9 +159,6 @@ public class PyramidCoreBlockEntity extends AbstractMachineBlockEntity implement
                 structureValid = false;
             }
         }
-
-        // 2. Framework Tick
-        super.onUpdateServer();
     }
 
     private void updateStructure() {
@@ -137,7 +168,7 @@ public class PyramidCoreBlockEntity extends AbstractMachineBlockEntity implement
             boostMultiplier = newTier.getMultiplier();
             structureValid = (newTier != PyramidTier.NONE);
             setChanged();
-            markForSync();
+            syncToClients();
         }
     }
 
@@ -158,7 +189,7 @@ public class PyramidCoreBlockEntity extends AbstractMachineBlockEntity implement
         if (this.isActive != active) {
             this.isActive = active;
             setChanged();
-            markForSync();
+            syncToClients();
         }
     }
 
@@ -166,25 +197,19 @@ public class PyramidCoreBlockEntity extends AbstractMachineBlockEntity implement
         return isActive;
     }
 
-    /**
-     * Activate pyramid with Inertial Stability Alloy (infinite production until off)
-     */
     public boolean activatePyramid(Player player) {
         updateStructure();
         if (pyramidTier != PyramidTier.NONE) {
-            // Set owner
             this.ownerUUID = player.getUUID();
             this.ownerName = player.getName().getString();
-            
-            // Consume ISA if present
-            ItemStack alloyStack = inventory.getHandler().getStackInSlot(ALLOY_SLOT);
+
+            ItemStack alloyStack = inventoryComponent.getHandler().getStackInSlot(ALLOY_SLOT);
             if (!alloyStack.isEmpty() && alloyStack.is(ModItems.INERTIAL_STABILITY_ALLOY.get())) {
                 alloyStack.shrink(1);
                 setActive(true);
                 return true;
             }
-            // If no ISA, check for biomass
-            ItemStack biomassStack = inventory.getHandler().getStackInSlot(BIOMASS_SLOT);
+            ItemStack biomassStack = inventoryComponent.getHandler().getStackInSlot(BIOMASS_SLOT);
             if (!biomassStack.isEmpty() && biomassStack.is(ModItems.ENTROPY_BIOMASS.get())) {
                 setActive(true);
                 return true;
@@ -196,12 +221,10 @@ public class PyramidCoreBlockEntity extends AbstractMachineBlockEntity implement
     public boolean activatePyramidWithAnkh(Player player) {
         updateStructure();
         if (pyramidTier != PyramidTier.NONE) {
-            // Set owner
             this.ownerUUID = player.getUUID();
             this.ownerName = player.getName().getString();
-            
-            // Check for biomass
-            ItemStack biomassStack = inventory.getHandler().getStackInSlot(BIOMASS_SLOT);
+
+            ItemStack biomassStack = inventoryComponent.getHandler().getStackInSlot(BIOMASS_SLOT);
             if (!biomassStack.isEmpty() && biomassStack.is(ModItems.ENTROPY_BIOMASS.get())) {
                 setActive(true);
                 return true;
@@ -213,124 +236,31 @@ public class PyramidCoreBlockEntity extends AbstractMachineBlockEntity implement
     public void deactivatePyramid() {
         setActive(false);
     }
-    
+
     // ==================== Owner Getters ====================
-    
+
     public UUID getOwnerUUID() {
         return ownerUUID;
     }
-    
+
     public String getOwnerName() {
         return ownerName;
     }
-    
+
     public boolean isOwner(Player player) {
-        if (ownerUUID == null) return true; // No owner = anyone can use
+        if (ownerUUID == null)
+            return true;
         return player.getUUID().equals(ownerUUID);
     }
 
-    // ==================== IMachineProcess Implementation ====================
-
-    @Override
-    public boolean canProcess() {
-        return false;
-    }
-
-    @Override
-    public void onProcessComplete() {
-    }
-
-    @Override
-    public int getProcessTime() {
-        return 0;
-    }
-
-    @Override
-    public int getEnergyCost() {
-        return 0;
-    }
-
-    // ==================== Framework Hooks ====================
-
-    @Override
-    protected IMachineProcess getProcess() {
-        return this;
-    }
-
-    @Override
-    public SlotAccessRules getSlotAccessRules() {
-        return this;
-    }
-
-    @Override
-    protected int getFuelSlot() {
-        return -1;
-    }
-
-    @Override
-    protected int[] getOutputSlots() {
-        return new int[0];
-    }
-
-    @Override
-    protected Predicate<ItemStack> getFuelValidator() {
-        return stack -> false;
-    }
-
-    @Override
-    protected ToIntFunction<ItemStack> getBurnTimeFunction() {
-        return stack -> 0;
-    }
-
-    @Override
-    protected boolean isSlotValid(int slot, @NotNull ItemStack stack) {
-        if (slot == ALLOY_SLOT) {
-            return stack.is(ModItems.INERTIAL_STABILITY_ALLOY.get());
-        } else if (slot == BIOMASS_SLOT) {
-            return stack.is(ModItems.ENTROPY_BIOMASS.get());
-        }
-        return false;
-    }
-
-    @Override
-    protected int getContainerDataValue(int index) {
-        return switch (index) {
-            case 8 -> net.nicotfpn.alientech.util.EnergyUtils
-                    .lowBits(level != null ? PyramidNetwork.get(level).getEntropyAvailable() : 0);
-            case 9 -> net.nicotfpn.alientech.util.EnergyUtils
-                    .highBits(level != null ? PyramidNetwork.get(level).getEntropyAvailable() : 0);
-            case 10 -> net.nicotfpn.alientech.util.EnergyUtils
-                    .lowBits(level != null ? PyramidNetwork.get(level).getNetworkCapacity() : 0);
-            case 11 -> net.nicotfpn.alientech.util.EnergyUtils
-                    .highBits(level != null ? PyramidNetwork.get(level).getNetworkCapacity() : 0);
-            case 12 -> isActive ? 1 : 0;
-            case 13 -> inventory.getHandler().getStackInSlot(ALLOY_SLOT).getCount();
-            case 14 -> inventory.getHandler().getStackInSlot(BIOMASS_SLOT).getCount();
-            default -> super.getContainerDataValue(index);
-        };
-    }
-
-    @Override
-    protected int getContainerDataCount() {
-        return 15;
-    }
-
-    // ==================== SlotAccessRules Implementation ====================
-
-    @Override
-    public boolean canInsert(int slot, @NotNull ItemStack stack, @Nullable Direction side) {
-        return isSlotValid(slot, stack);
-    }
-
-    @Override
-    public boolean canExtract(int slot, @Nullable Direction side) {
-        return false;
-    }
-
-    // ==================== Getters ====================
+    // ==================== Component Accessors ====================
 
     public IItemHandler getItemHandler() {
-        return inventory.getHandler();
+        return inventoryComponent.getHandler();
+    }
+
+    public net.neoforged.neoforge.energy.IEnergyStorage getEnergyStorage() {
+        return energyComponent.getEnergyStorage();
     }
 
     public PyramidTier getPyramidTier() {
@@ -341,7 +271,15 @@ public class PyramidCoreBlockEntity extends AbstractMachineBlockEntity implement
         return structureValid;
     }
 
-    // ==================== Menu & Drops ====================
+    // ==================== Drops ====================
+
+    public void drops() {
+        if (level != null) {
+            inventoryComponent.dropAll(level, worldPosition);
+        }
+    }
+
+    // ==================== MenuProvider ====================
 
     @Override
     public @NotNull Component getDisplayName() {
@@ -350,51 +288,54 @@ public class PyramidCoreBlockEntity extends AbstractMachineBlockEntity implement
 
     @Nullable
     @Override
-    public AbstractContainerMenu createMenu(int id, Inventory pInv, Player pPlayer) {
-        return new PyramidCoreMenu(id, pInv, this, this.data);
-    }
-
-    public void drops() {
-        SimpleContainer container = new SimpleContainer(inventory.getHandler().getSlots());
-        for (int i = 0; i < inventory.getHandler().getSlots(); i++) {
-            container.setItem(i, inventory.getHandler().getStackInSlot(i));
-        }
-        Containers.dropContents(this.level, this.worldPosition, container);
+    public AbstractContainerMenu createMenu(int id, @NotNull Inventory pInv, @NotNull Player pPlayer) {
+        return new PyramidCoreMenu(id, pInv, this);
     }
 
     // ==================== Persistence ====================
 
     @Override
+    public void saveAdditional(@NotNull CompoundTag tag, @NotNull HolderLookup.Provider provider) {
+        super.saveAdditional(tag, provider); // Saves ECS components
+        tag.putBoolean("IsActive", isActive);
+        tag.putBoolean("StructureValid", structureValid);
+        tag.putInt("PyramidTier", pyramidTier.ordinal());
+        tag.putFloat("BoostMultiplier", boostMultiplier);
+        if (ownerUUID != null)
+            tag.putUUID("OwnerUUID", ownerUUID);
+        if (ownerName != null)
+            tag.putString("OwnerName", ownerName);
+    }
+
+    @Override
     public void loadAdditional(@NotNull CompoundTag tag, @NotNull HolderLookup.Provider provider) {
-        super.loadAdditional(tag, provider);
+        super.loadAdditional(tag, provider); // Loads ECS components
+
         isActive = SafeNBT.getBoolean(tag, "IsActive", false);
         structureValid = SafeNBT.getBoolean(tag, "StructureValid", false);
         int tierOrd = SafeNBT.getInt(tag, "PyramidTier", PyramidTier.NONE.ordinal());
         pyramidTier = (tierOrd >= 0 && tierOrd < PyramidTier.values().length) ? PyramidTier.values()[tierOrd]
                 : PyramidTier.NONE;
         boostMultiplier = StateValidator.clampMultiplier(SafeNBT.getFloat(tag, "BoostMultiplier", 1.0f), 1.0f, 1000.0f);
-        
-        // Load owner
-        if (tag.hasUUID("OwnerUUID")) {
+
+        if (tag.hasUUID("OwnerUUID"))
             ownerUUID = tag.getUUID("OwnerUUID");
-        }
         ownerName = SafeNBT.getString(tag, "OwnerName", null);
+
+        // === Legacy NBT Migration ===
+        if (!tag.contains("Components")) {
+            if (tag.contains("MachineEnergy")) {
+                CompoundTag energyTag = tag.getCompound("MachineEnergy");
+                if (energyTag.contains("Stored")) {
+                    energyComponent.getEnergyStorage().setEnergy(energyTag.getInt("Stored"));
+                }
+            }
+        }
     }
 
-    @Override
-    public void saveAdditional(@NotNull CompoundTag tag, @NotNull HolderLookup.Provider provider) {
-        super.saveAdditional(tag, provider);
-        tag.putBoolean("IsActive", isActive);
-        tag.putBoolean("StructureValid", structureValid);
-        tag.putInt("PyramidTier", pyramidTier.ordinal());
-        tag.putFloat("BoostMultiplier", boostMultiplier);
-        
-        // Save owner
-        if (ownerUUID != null) {
-            tag.putUUID("OwnerUUID", ownerUUID);
-        }
-        if (ownerName != null) {
-            tag.putString("OwnerName", ownerName);
+    private void syncToClients() {
+        if (level != null) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
         }
     }
 

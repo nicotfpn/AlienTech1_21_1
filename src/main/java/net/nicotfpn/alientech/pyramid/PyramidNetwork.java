@@ -18,7 +18,7 @@ import java.util.WeakHashMap;
  * - Keep a set of registered Pyramid Core positions (cores register/unregister
  * in their onLoad()/setRemoved()).
  * - Maintain a shared entropy buffer that machines can pull from using
- * {@link #extractEntropy(int, boolean)}.
+ * {@link #extractEntropy(long, boolean)}.
  * - Compute current tier dynamically by querying
  * {@link PyramidStructureValidator} for
  * each registered core (highest tier wins).
@@ -142,9 +142,9 @@ public final class PyramidNetwork {
     /**
      * Insert entropy into the network buffer. Returns amount actually inserted.
      */
-    public int insertEntropy(int amount, boolean simulate) {
-        if (amount <= 0)
-            return 0;
+    public long insertEntropy(long amount, boolean simulate) {
+        if (amount <= 0L)
+            return 0L;
         return networkBuffer.insertEntropy(amount, simulate);
     }
 
@@ -155,23 +155,23 @@ public final class PyramidNetwork {
      * Machines must call this and then insert the returned amount into their
      * local buffer; machines must never consume directly from the network.
      */
-    public int extractEntropy(int amount, boolean simulate) {
-        if (amount <= 0)
-            return 0;
+    public long extractEntropy(long amount, boolean simulate) {
+        if (amount <= 0L)
+            return 0L;
         return networkBuffer.extractEntropy(amount, simulate);
     }
 
     /**
      * Query available entropy in the network buffer.
      */
-    public int getEntropyAvailable() {
+    public long getEntropyAvailable() {
         return networkBuffer.getEntropy();
     }
 
     /**
      * Return network buffer capacity.
      */
-    public int getNetworkCapacity() {
+    public long getNetworkCapacity() {
         return networkBuffer.getMaxEntropy();
     }
 

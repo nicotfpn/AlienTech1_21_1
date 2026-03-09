@@ -7,6 +7,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.nicotfpn.alientech.client.gui.element.AlienGuiElement;
+import net.nicotfpn.alientech.client.gui.element.AlienGuiTab;
+import net.nicotfpn.alientech.client.gui.element.AlienSideConfigElement;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,6 +16,9 @@ import java.util.List;
 public abstract class AlienScreen<T extends AbstractContainerMenu> extends AbstractContainerScreen<T> {
 
     protected final List<AlienGuiElement> leftElements = new ArrayList<>();
+    protected final List<AlienGuiTab> tabs = new ArrayList<>();
+    protected boolean configMode = false;
+    protected AlienSideConfigElement sideConfigElement;
 
     public AlienScreen(T menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -22,7 +27,8 @@ public abstract class AlienScreen<T extends AbstractContainerMenu> extends Abstr
     @Override
     protected void init() {
         super.init();
-        this.leftElements.clear(); // Clear old elements on resize/init
+        this.leftElements.clear();
+        this.tabs.clear();
         addGuiElements();
     }
 
@@ -33,7 +39,11 @@ public abstract class AlienScreen<T extends AbstractContainerMenu> extends Abstr
     }
 
     protected <E extends AlienGuiElement> E addElement(E element) {
-        leftElements.add(element);
+        if (element instanceof AlienGuiTab tab) {
+            tabs.add(tab);
+        } else {
+            leftElements.add(element);
+        }
         return element;
     }
 
@@ -41,7 +51,7 @@ public abstract class AlienScreen<T extends AbstractContainerMenu> extends Abstr
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         renderBackground(guiGraphics, mouseX, mouseY, partialTick);
         super.render(guiGraphics, mouseX, mouseY, partialTick);
-
+        renderTooltip(guiGraphics, mouseX, mouseY);
     }
 
     @Override
@@ -52,31 +62,58 @@ public abstract class AlienScreen<T extends AbstractContainerMenu> extends Abstr
 
         drawBackgroundTexture(guiGraphics, x, y);
 
-        // Render elements
-        for (AlienGuiElement element : leftElements) {
-            element.render(guiGraphics, mouseX, mouseY, partialTick);
+        if (configMode && sideConfigElement != null) {
+            sideConfigElement.render(guiGraphics, mouseX, mouseY, partialTick);
+        } else {
+            // Render elements
+            for (AlienGuiElement element : leftElements) {
+                element.render(guiGraphics, mouseX, mouseY, partialTick);
+            }
+        }
+
+        // Render tabs always
+        for (AlienGuiTab tab : tabs) {
+            tab.render(guiGraphics, mouseX, mouseY, partialTick);
         }
     }
 
+    public void setConfigMode(boolean configMode) {
+        this.configMode = configMode;
+        if (tabs.size() > 0) {
+            // Usually the side config tab is the first or second.
+            // We should find it and set it active
+            // For now, let's just let the tab handle its own active state via the click
+            // consumer
+        }
+    }
+
+    public boolean isConfigMode() {
+        return configMode;
+    }
+
     protected void drawBackgroundTexture(GuiGraphics guiGraphics, int x, int y) {
-        // Default implementation using standard GUI base
         guiGraphics.blit(AlienInfo.GUI_BASE, x, y, 0, 0, imageWidth, imageHeight);
     }
 
     @Override
     protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        // Render element tooltips/foregrounds here if needed, but AlienGuiElement
-        // handles its own foreground
-        // We override this to PREVENT default title rendering if we want, or keep it.
-        // For now, let's keep super to render title/inventory labels.
         super.renderLabels(guiGraphics, mouseX, mouseY);
 
-        for (AlienGuiElement element : leftElements) {
-            if (element.isMouseOver(mouseX, mouseY)) {
-                // Elements handle their own tooltips, but if they had "foreground" drawing
-                // dependent on layer, do it here
-            }
+        // Element tooltips are handled in their own drawForeground called by
+        // renderWidget
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        for (AlienGuiTab tab : tabs) {
+            if (tab.mouseClicked(mouseX, mouseY, button))
+                return true;
         }
+        for (AlienGuiElement element : leftElements) {
+            if (element.mouseClicked(mouseX, mouseY, button))
+                return true;
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
     }
 
     // Helper accessors for elements
@@ -94,5 +131,9 @@ public abstract class AlienScreen<T extends AbstractContainerMenu> extends Abstr
 
     public int getYSize() {
         return imageHeight;
+    }
+
+    public net.minecraft.client.Minecraft getMinecraft() {
+        return minecraft;
     }
 }

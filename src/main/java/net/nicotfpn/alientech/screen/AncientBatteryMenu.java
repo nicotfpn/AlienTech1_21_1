@@ -3,10 +3,7 @@ package net.nicotfpn.alientech.screen;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.inventory.ContainerLevelAccess;
-import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -15,6 +12,8 @@ import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.neoforged.neoforge.items.SlotItemHandler;
 import net.nicotfpn.alientech.block.entity.AncientBatteryBlockEntity;
 import net.nicotfpn.alientech.registration.AlienBlocks;
+import net.nicotfpn.alientech.ui.sync.AlienContainerMenu;
+import net.nicotfpn.alientech.ui.sync.impl.SyncableLong;
 
 /**
  * Menu for Ancient Battery.
@@ -23,10 +22,13 @@ import net.nicotfpn.alientech.registration.AlienBlocks;
  * - Bottom Slot (Discharge/Input): Item gives energy to battery.
  * - Center: Large Energy Bar.
  */
-public class AncientBatteryMenu extends AbstractContainerMenu {
+public class AncientBatteryMenu extends AlienContainerMenu {
 
     public final AncientBatteryBlockEntity blockEntity;
-    private final ContainerData data;
+
+    // Sync Trackers
+    private final SyncableLong energy;
+    private final SyncableLong maxEnergy;
 
     // Slot indices
     // Slot 0: Charge (Output)
@@ -38,15 +40,12 @@ public class AncientBatteryMenu extends AbstractContainerMenu {
     private static final int VANILLA_SLOT_COUNT = 36;
 
     public AncientBatteryMenu(int containerId, Inventory inv, FriendlyByteBuf extraData) {
-        this(containerId, inv, inv.player.level().getBlockEntity(extraData.readBlockPos()),
-                new SimpleContainerData(12));
+        this(containerId, inv, inv.player.level().getBlockEntity(extraData.readBlockPos()));
     }
 
-    public AncientBatteryMenu(int containerId, Inventory inv, BlockEntity entity, ContainerData data) {
-        super(ModMenuTypes.ANCIENT_BATTERY_MENU.get(), containerId);
-        checkContainerSize(inv, 2); // 2 slots now
+    public AncientBatteryMenu(int containerId, Inventory inv, BlockEntity entity) {
+        super(ModMenuTypes.ANCIENT_BATTERY_MENU.get(), containerId, inv.player);
         blockEntity = ((AncientBatteryBlockEntity) entity);
-        this.data = data;
 
         // Slot positions from alientech_gui_gen.py: x=79/103, y=63
         // Slot 0: Charge Item (Battery -> Item)
@@ -55,7 +54,11 @@ public class AncientBatteryMenu extends AbstractContainerMenu {
         // Slot 1: Discharge Item (Item -> Battery)
         this.addSlot(new EnergySlot(blockEntity.getItemHandler(), 1, 103, 63));
 
-        addDataSlots(data);
+        this.energy = new SyncableLong(() -> (long) blockEntity.getEnergyStorage().getEnergyStored(), null);
+        this.maxEnergy = new SyncableLong(() -> (long) blockEntity.getEnergyStorage().getMaxEnergyStored(), null);
+
+        track(energy);
+        track(maxEnergy);
 
         addPlayerInventory(inv);
         addPlayerHotbar(inv);
@@ -63,33 +66,23 @@ public class AncientBatteryMenu extends AbstractContainerMenu {
 
     // ==================== Energy Data ====================
 
-    // ==================== Energy Data ====================
-
-    public int getEnergyStored() {
-        return data.get(4) | (data.get(5) << 16);
+    public long getEnergyStored() {
+        return energy.get();
     }
 
-    public int getMaxEnergy() {
-        return data.get(6) | (data.get(7) << 16);
-    }
-
-    public int getEntropy() {
-        return data.get(8) | (data.get(9) << 16);
-    }
-
-    public int getMaxEntropy() {
-        return data.get(10) | (data.get(11) << 16);
+    public long getMaxEnergy() {
+        return maxEnergy.get();
     }
 
     public float getEnergyPercentage() {
-        int max = getMaxEnergy();
+        long max = getMaxEnergy();
         return max > 0 ? (float) getEnergyStored() / max : 0;
     }
 
     public int getScaledEnergy(int maxHeight) {
-        int energy = getEnergyStored();
-        int maxEnergy = getMaxEnergy();
-        return maxEnergy > 0 ? (int) ((long) energy * maxHeight / maxEnergy) : 0;
+        long e = getEnergyStored();
+        long maxE = getMaxEnergy();
+        return maxE > 0 ? (int) (e * maxHeight / maxE) : 0;
     }
 
     // ==================== Shift-Click ====================
@@ -113,19 +106,12 @@ public class AncientBatteryMenu extends AbstractContainerMenu {
         } else {
             // From player to TE
             if (hasEnergyCapability(sourceStack)) {
-                // Determine destination
-                IEnergyStorage energy = sourceStack.getCapability(Capabilities.EnergyStorage.ITEM);
-                if (energy != null) {
-                    // Similar to Mekanism:
-                    // If item can EXTRACT energy (it has energy to give), it goes to Discharge
-                    // (Slot 1).
-                    // If item can RECEIVE energy (it needs charge), it goes to Charge (Slot 0).
-                    // If it can do both, prioritize based on current state (is it full?).
-
-                    boolean canReceive = energy.canReceive();
-                    boolean canExtract = energy.canExtract();
-                    boolean hasPower = energy.getEnergyStored() > 0;
-                    boolean isFull = energy.getEnergyStored() == energy.getMaxEnergyStored();
+                IEnergyStorage energyCap = sourceStack.getCapability(Capabilities.EnergyStorage.ITEM);
+                if (energyCap != null) {
+                    boolean canReceive = energyCap.canReceive();
+                    boolean canExtract = energyCap.canExtract();
+                    boolean hasPower = energyCap.getEnergyStored() > 0;
+                    boolean isFull = energyCap.getEnergyStored() == energyCap.getMaxEnergyStored();
 
                     if (canExtract && hasPower) {
                         // Has power to give -> Discharge Slot (1)
@@ -141,8 +127,7 @@ public class AncientBatteryMenu extends AbstractContainerMenu {
                             return ItemStack.EMPTY;
                         }
                     } else {
-                        // Default to Discharge (Input) if unclear? Or Charge?
-                        // Let's try Discharge first (1), then Charge (0).
+                        // Default to Discharge (Input) then Charge (Output)
                         if (!moveItemStackTo(sourceStack, 1, 2, false)) {
                             if (!moveItemStackTo(sourceStack, 0, 1, false)) {
                                 return ItemStack.EMPTY;

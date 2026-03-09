@@ -12,7 +12,9 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.nicotfpn.alientech.AlienTech;
+import net.nicotfpn.alientech.Config;
 import net.nicotfpn.alientech.block.custom.AncientChargerBlock;
+import net.nicotfpn.alientech.block.custom.EnergyCableBlock;
 import net.nicotfpn.alientech.block.custom.PrimalCatalystBlock;
 import net.nicotfpn.alientech.block.custom.PyramidCoreBlock;
 import net.nicotfpn.alientech.item.ModItems;
@@ -117,6 +119,35 @@ public class ModBlocks {
                                                         .strength(1.5f)
                                                         .sound(SoundType.METAL)
                                                         .noOcclusion()));
+
+        // === Phase 7b: Energy Cables ===
+
+        public static final DeferredBlock<Block> CABLE_BASIC = registerBlock("cable_basic",
+                        () -> new EnergyCableBlock(
+                                        BlockBehaviour.Properties.of()
+                                                        .mapColor(MapColor.METAL)
+                                                        .strength(1.5f)
+                                                        .sound(SoundType.METAL)
+                                                        .noOcclusion(),
+                                        Config.BASIC_ENERGY_CABLE_TRANSFER_RATE.get()));
+
+        public static final DeferredBlock<Block> CABLE_ADVANCED = registerBlock("cable_advanced",
+                        () -> new EnergyCableBlock(
+                                        BlockBehaviour.Properties.of()
+                                                        .mapColor(MapColor.METAL)
+                                                        .strength(1.5f)
+                                                        .sound(SoundType.METAL)
+                                                        .noOcclusion(),
+                                        Config.ADVANCED_ENERGY_CABLE_TRANSFER_RATE.get()));
+
+        public static final DeferredBlock<Block> CABLE_ELITE = registerBlock("cable_elite",
+                        () -> new EnergyCableBlock(
+                                        BlockBehaviour.Properties.of()
+                                                        .mapColor(MapColor.METAL)
+                                                        .strength(1.5f)
+                                                        .sound(SoundType.METAL)
+                                                        .noOcclusion(),
+                                        Config.ELITE_ENERGY_CABLE_TRANSFER_RATE.get()));
 
         // === Phase 9: Evolution Chamber ===
 

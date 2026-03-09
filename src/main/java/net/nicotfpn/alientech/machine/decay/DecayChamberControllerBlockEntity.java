@@ -24,6 +24,8 @@ import net.nicotfpn.alientech.machine.core.AlienMachineBlockEntity;
 import net.nicotfpn.alientech.machine.core.component.EntropyComponent;
 import net.nicotfpn.alientech.machine.core.component.InventoryComponent;
 import net.nicotfpn.alientech.machine.core.component.ProcessingComponent;
+import net.nicotfpn.alientech.machine.core.component.SideConfigComponent;
+import net.nicotfpn.alientech.machine.core.component.AutoTransferComponent;
 import net.nicotfpn.alientech.screen.DecayChamberMenu;
 import net.nicotfpn.alientech.util.EntityStorageUtil;
 import net.nicotfpn.alientech.util.ModTags;
@@ -46,6 +48,8 @@ public class DecayChamberControllerBlockEntity extends AlienMachineBlockEntity i
     public final InventoryComponent inventoryComponent;
     public final EntropyComponent entropyComponent;
     public final ProcessingComponent processingComponent;
+    public final SideConfigComponent sideConfig;
+    public final AutoTransferComponent autoTransfer;
 
     // ==================== Legacy State ====================
     private MobDecayState decayState = MobDecayState.EMPTY;
@@ -79,21 +83,30 @@ public class DecayChamberControllerBlockEntity extends AlienMachineBlockEntity i
         this.processingComponent = new ProcessingComponent(this, this::getCalculatedMaxProgress,
                 this::onProcessComplete);
 
-        addComponent(this.inventoryComponent);
-        addComponent(this.entropyComponent);
-        addComponent(this.processingComponent);
+        registerComponent(this.inventoryComponent);
+        registerComponent(this.entropyComponent);
+        registerComponent(this.processingComponent);
+
+        this.sideConfig = new SideConfigComponent(this);
+        registerComponent(this.sideConfig);
+
+        this.autoTransfer = new AutoTransferComponent(this);
+        this.autoTransfer.injectSideConfig(this.sideConfig);
+        registerComponent(this.autoTransfer);
+
+        initSidedWrappers();
 
         // Dummy wrapper adapting the new EntropyComponent state into the old Capability
         // interface requests
         this.legacyEntropyWrapper = new EntropyStorage(ENTROPY_CAPACITY, 0, 0, false, true, this::setChanged) {
             @Override
-            public int getEntropy() {
-                return (int) entropyComponent.getEntropyStored();
+            public long getEntropy() {
+                return entropyComponent.getEntropyStored();
             }
 
             @Override
-            public int getMaxEntropy() {
-                return (int) entropyComponent.getMaxEntropy();
+            public long getMaxEntropy() {
+                return entropyComponent.getMaxEntropy();
             }
 
             @Override
@@ -102,22 +115,21 @@ public class DecayChamberControllerBlockEntity extends AlienMachineBlockEntity i
             }
 
             @Override
-            public int insertEntropy(int amount, boolean simulate) {
+            public long insertEntropy(long amount, boolean simulate) {
                 if (!canInsert())
-                    return 0;
-                int space = (int) Math.min(entropyComponent.getMaxEntropy() - entropyComponent.getEntropyStored(),
-                        Integer.MAX_VALUE);
-                int accepted = Math.min(amount, space);
+                    return 0L;
+                long space = entropyComponent.getMaxEntropy() - entropyComponent.getEntropyStored();
+                long accepted = Math.min(amount, space);
                 if (!simulate && accepted > 0)
                     entropyComponent.addEntropy(accepted);
                 return accepted;
             }
 
             @Override
-            public int extractEntropy(int amount, boolean simulate) {
+            public long extractEntropy(long amount, boolean simulate) {
                 if (!canExtract())
-                    return 0;
-                int extracted = (int) Math.min(amount, entropyComponent.getEntropyStored());
+                    return 0L;
+                long extracted = Math.min(amount, entropyComponent.getEntropyStored());
                 if (!simulate && extracted > 0)
                     entropyComponent.consumeEntropy(extracted);
                 return extracted;

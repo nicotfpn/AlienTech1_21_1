@@ -3,124 +3,135 @@ package net.nicotfpn.alientech.screen;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.inventory.ContainerLevelAccess;
-import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.neoforge.items.SlotItemHandler;
 import net.nicotfpn.alientech.block.ModBlocks;
 import net.nicotfpn.alientech.block.entity.PyramidCoreBlockEntity;
+import net.nicotfpn.alientech.pyramid.PyramidNetwork;
+import net.nicotfpn.alientech.ui.sync.AlienContainerMenu;
+import net.nicotfpn.alientech.ui.sync.impl.SyncableLong;
 
-public class PyramidCoreMenu extends AbstractContainerMenu {
+public class PyramidCoreMenu extends AlienContainerMenu {
+
     public final PyramidCoreBlockEntity blockEntity;
-    private final ContainerData data;
 
-    public PyramidCoreMenu(int pContainerId, Inventory inv, FriendlyByteBuf extraData) {
-        this(pContainerId, inv, inv.player.level().getBlockEntity(extraData.readBlockPos()),
-                new SimpleContainerData(12));
+    // Client-synced values
+    private long energyStored;
+    private long maxEnergy;
+    private long entropyAvailable;
+    private long entropyCapacity;
+    private long isActiveLong;
+
+    public PyramidCoreMenu(int containerId, Inventory inv, FriendlyByteBuf extraData) {
+        this(containerId, inv, inv.player.level().getBlockEntity(extraData.readBlockPos()));
     }
 
-    public PyramidCoreMenu(int pContainerId, Inventory inv, BlockEntity entity, ContainerData data) {
-        super(ModMenuTypes.PYRAMID_CORE_MENU.get(), pContainerId);
-        blockEntity = ((PyramidCoreBlockEntity) entity);
-        this.data = data;
+    public PyramidCoreMenu(int containerId, Inventory inv, BlockEntity entity) {
+        super(ModMenuTypes.PYRAMID_CORE_MENU.get(), containerId, inv.player);
+        this.blockEntity = (PyramidCoreBlockEntity) entity;
 
-        // Eye of Horus slot (from alientech_gui_gen.py: x=78, y=41)
+        // Alloy slot (ISA) — position from GUI spec
         this.addSlot(new SlotItemHandler(blockEntity.getItemHandler(), 0, 78, 41));
 
         addPlayerInventory(inv);
         addPlayerHotbar(inv);
 
-        // Registra os data slots para sincronização servidor->cliente
-        addDataSlots(data);
+        // === SyncableLong Trackers ===
+        track(SyncableLong.create(
+                () -> (long) blockEntity.getEnergyStorage().getEnergyStored(),
+                val -> this.energyStored = val));
+        track(SyncableLong.create(
+                () -> (long) blockEntity.getEnergyStorage().getMaxEnergyStored(),
+                val -> this.maxEnergy = val));
+        track(SyncableLong.create(
+                () -> blockEntity.getLevel() != null
+                        ? (long) PyramidNetwork.get(blockEntity.getLevel()).getEntropyAvailable()
+                        : 0L,
+                val -> this.entropyAvailable = val));
+        track(SyncableLong.create(
+                () -> blockEntity.getLevel() != null
+                        ? (long) PyramidNetwork.get(blockEntity.getLevel()).getNetworkCapacity()
+                        : 0L,
+                val -> this.entropyCapacity = val));
+        track(SyncableLong.create(
+                () -> blockEntity.isActive() ? 1L : 0L,
+                val -> this.isActiveLong = val));
     }
 
-    private static final int HOTBAR_SLOT_COUNT = 9;
-    private static final int PLAYER_INVENTORY_ROW_COUNT = 3;
-    private static final int PLAYER_INVENTORY_COLUMN_COUNT = 9;
-    private static final int PLAYER_INVENTORY_SLOT_COUNT = PLAYER_INVENTORY_COLUMN_COUNT * PLAYER_INVENTORY_ROW_COUNT;
-    private static final int VANILLA_SLOT_COUNT = HOTBAR_SLOT_COUNT + PLAYER_INVENTORY_SLOT_COUNT;
-    private static final int VANILLA_FIRST_SLOT_INDEX = 1; // Inventory starts after TE slot
-    private static final int TE_INVENTORY_FIRST_SLOT_INDEX = 0;
-    private static final int TE_INVENTORY_SLOT_COUNT = 1;
+    // ==================== UI Getters ====================
+
+    public long getEnergyStored() {
+        return energyStored;
+    }
+
+    public long getMaxEnergy() {
+        return maxEnergy;
+    }
+
+    public long getEntropy() {
+        return entropyAvailable;
+    }
+
+    public long getMaxEntropy() {
+        return entropyCapacity;
+    }
+
+    public boolean isActive() {
+        return isActiveLong != 0;
+    }
+
+    // ==================== Quick Move ====================
+
+    private static final int TE_SLOT_COUNT = 1;
 
     @Override
-    public ItemStack quickMoveStack(Player playerIn, int index) {
+    public ItemStack quickMoveStack(Player player, int index) {
         Slot sourceSlot = slots.get(index);
         if (sourceSlot == null || !sourceSlot.hasItem())
             return ItemStack.EMPTY;
         ItemStack sourceStack = sourceSlot.getItem();
-        ItemStack copyOfSourceStack = sourceStack.copy();
+        ItemStack copy = sourceStack.copy();
 
-        if (index < VANILLA_FIRST_SLOT_INDEX) {
-            if (!moveItemStackTo(sourceStack, VANILLA_FIRST_SLOT_INDEX, VANILLA_FIRST_SLOT_INDEX + VANILLA_SLOT_COUNT,
-                    false)) {
+        if (index < TE_SLOT_COUNT) {
+            if (!moveItemStackTo(sourceStack, TE_SLOT_COUNT, TE_SLOT_COUNT + 36, false)) {
                 return ItemStack.EMPTY;
             }
-        } else if (index < VANILLA_FIRST_SLOT_INDEX + VANILLA_SLOT_COUNT) {
-            if (!moveItemStackTo(sourceStack, TE_INVENTORY_FIRST_SLOT_INDEX, TE_INVENTORY_FIRST_SLOT_INDEX
-                    + TE_INVENTORY_SLOT_COUNT, false)) {
-                return ItemStack.EMPTY;
-            }
-        }
-
-        if (sourceStack.getCount() == 0) {
-            sourceSlot.set(ItemStack.EMPTY);
         } else {
-            sourceSlot.setChanged();
+            if (!moveItemStackTo(sourceStack, 0, TE_SLOT_COUNT, false)) {
+                return ItemStack.EMPTY;
+            }
         }
 
-        return copyOfSourceStack;
+        if (sourceStack.isEmpty())
+            sourceSlot.set(ItemStack.EMPTY);
+        else
+            sourceSlot.setChanged();
+
+        return copy;
     }
 
     @Override
-    public boolean stillValid(Player pPlayer) {
+    public boolean stillValid(Player player) {
         return stillValid(ContainerLevelAccess.create(blockEntity.getLevel(), blockEntity.getBlockPos()),
-                pPlayer, ModBlocks.PYRAMID_CORE.get());
+                player, ModBlocks.PYRAMID_CORE.get());
     }
 
-    // Energia é dividida em 2 ints (ContainerData usa shorts internamente)
-    // data[0] = energy low bits, data[1] = energy high bits
-    // data[2] = isActive (0 ou 1), data[3] = alloy count
-    public int getEnergyStored() {
-        return data.get(4) | (data.get(5) << 16);
-    }
+    // ==================== Player Inventory Helpers ====================
 
-    public int getMaxEnergy() {
-        return data.get(6) | (data.get(7) << 16);
-    }
-
-    public int getEntropy() {
-        return data.get(8) | (data.get(9) << 16);
-    }
-
-    public int getMaxEntropy() {
-        return data.get(10) | (data.get(11) << 16);
-    }
-
-    public boolean isActive() {
-        return data.get(12) != 0;
-    }
-
-    public int getAlloyCount() {
-        return data.get(13);
-    }
-
-    private void addPlayerInventory(Inventory pPlayerInventory) {
-        for (int i = 0; i < PLAYER_INVENTORY_ROW_COUNT; i++) {
-            for (int l = 0; l < PLAYER_INVENTORY_COLUMN_COUNT; l++) {
-                this.addSlot(new net.minecraft.world.inventory.Slot(pPlayerInventory,
-                        l + i * PLAYER_INVENTORY_COLUMN_COUNT + 9, 8 + l * 18, 84 + i * 18));
+    private void addPlayerInventory(Inventory playerInventory) {
+        for (int i = 0; i < 3; ++i) {
+            for (int l = 0; l < 9; ++l) {
+                this.addSlot(new Slot(playerInventory, l + i * 9 + 9, 8 + l * 18, 84 + i * 18));
             }
         }
     }
 
-    private void addPlayerHotbar(Inventory pPlayerInventory) {
-        for (int i = 0; i < HOTBAR_SLOT_COUNT; i++) {
-            this.addSlot(new net.minecraft.world.inventory.Slot(pPlayerInventory, i, 8 + i * 18, 142));
+    private void addPlayerHotbar(Inventory playerInventory) {
+        for (int i = 0; i < 9; ++i) {
+            this.addSlot(new Slot(playerInventory, i, 8 + i * 18, 142));
         }
     }
 }

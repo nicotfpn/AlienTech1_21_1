@@ -6,6 +6,7 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.nicotfpn.alientech.AlienTech;
 import net.nicotfpn.alientech.block.ModBlocks;
+import net.nicotfpn.alientech.machine.evolution.EvolutionChamberBlockEntity;
 
 import java.util.function.Supplier;
 
@@ -64,11 +65,20 @@ public class ModBlockEntities {
                                         EntropyCableBlockEntity::new,
                                         ModBlocks.ENTROPY_CABLE.get()).build(null));
 
+        // === Phase 7b: Energy Cables ===
+
+        public static final Supplier<BlockEntityType<EnergyCableBlockEntity>> ENERGY_CABLE_BE = BLOCK_ENTITIES
+                        .register("energy_cable_be", () -> BlockEntityType.Builder.of(
+                                        EnergyCableBlockEntity::new,
+                                        ModBlocks.CABLE_BASIC.get(),
+                                        ModBlocks.CABLE_ADVANCED.get(),
+                                        ModBlocks.CABLE_ELITE.get()).build(null));
+
         // === Phase 9: Evolution Chamber ===
 
-        public static final Supplier<BlockEntityType<net.nicotfpn.alientech.machine.evolution.EvolutionChamberBlockEntity>> EVOLUTION_CHAMBER_BE = BLOCK_ENTITIES
+        public static final Supplier<BlockEntityType<EvolutionChamberBlockEntity>> EVOLUTION_CHAMBER_BE = BLOCK_ENTITIES
                         .register("evolution_chamber_be", () -> BlockEntityType.Builder.of(
-                                        net.nicotfpn.alientech.machine.evolution.EvolutionChamberBlockEntity::new,
+                                        EvolutionChamberBlockEntity::new,
                                         ModBlocks.EVOLUTION_CHAMBER.get()).build(null));
 
         public static void register(IEventBus eventBus) {

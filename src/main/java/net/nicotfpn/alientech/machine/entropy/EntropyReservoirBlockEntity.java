@@ -16,6 +16,7 @@ import net.nicotfpn.alientech.machine.core.AlienMachineBlockEntity;
 import net.nicotfpn.alientech.machine.core.component.EntropyComponent;
 import net.nicotfpn.alientech.network.AlienEnergyNetwork;
 import net.nicotfpn.alientech.network.AlienNetworkSavedData;
+import net.nicotfpn.alientech.machine.core.component.SideConfigComponent;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -29,6 +30,7 @@ public class EntropyReservoirBlockEntity extends AlienMachineBlockEntity impleme
 
     // ==================== Components ====================
     public final EntropyComponent entropyComponent;
+    public final SideConfigComponent sideConfig;
 
     // ==================== State ====================
     private UUID ownerId;
@@ -39,9 +41,14 @@ public class EntropyReservoirBlockEntity extends AlienMachineBlockEntity impleme
     public EntropyReservoirBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.ENTROPY_RESERVOIR_BE.get(), pos, state);
 
-        // The local buffer - NOT added to components to prevent NBT duplication saves!
-        // It resides purely in RAM and is flushed to the network.
+        // The local buffer — now registered via ECS
         this.entropyComponent = new EntropyComponent(this, Config.ENTROPY_RESERVOIR_CAPACITY.get());
+        registerComponent(this.entropyComponent);
+
+        this.sideConfig = new SideConfigComponent(this);
+        registerComponent(this.sideConfig);
+
+        initSidedWrappers();
     }
 
     public void setOwner(UUID ownerId) {
@@ -115,28 +122,26 @@ public class EntropyReservoirBlockEntity extends AlienMachineBlockEntity impleme
 
     private final net.nicotfpn.alientech.entropy.IEntropyHandler capabilityHandler = new net.nicotfpn.alientech.entropy.IEntropyHandler() {
         @Override
-        public int getEntropy() {
+        public long getEntropy() {
             AlienEnergyNetwork net = getConnectedNetwork();
-            return net != null ? (int) Math.min(net.getEntropyStored(), Integer.MAX_VALUE)
-                    : (int) entropyComponent.getEntropyStored();
+            return net != null ? net.getEntropyStored() : entropyComponent.getEntropyStored();
         }
 
         @Override
-        public int getMaxEntropy() {
+        public long getMaxEntropy() {
             return Config.ENTROPY_RESERVOIR_CAPACITY.get();
         }
 
         @Override
-        public int insertEntropy(int amount, boolean simulate) {
+        public long insertEntropy(long amount, boolean simulate) {
             AlienEnergyNetwork net = getConnectedNetwork();
             if (net != null) {
                 if (!simulate)
                     net.insertEntropy(amount, level.getGameTime());
                 return amount;
             } else {
-                int space = (int) Math.min(entropyComponent.getMaxEntropy() - entropyComponent.getEntropyStored(),
-                        Integer.MAX_VALUE);
-                int accepted = Math.min(amount, space);
+                long space = entropyComponent.getMaxEntropy() - entropyComponent.getEntropyStored();
+                long accepted = Math.min(amount, space);
                 if (!simulate && accepted > 0)
                     entropyComponent.addEntropy(accepted);
                 return accepted;
@@ -144,15 +149,15 @@ public class EntropyReservoirBlockEntity extends AlienMachineBlockEntity impleme
         }
 
         @Override
-        public int extractEntropy(int amount, boolean simulate) {
+        public long extractEntropy(long amount, boolean simulate) {
             AlienEnergyNetwork net = getConnectedNetwork();
             if (net != null) {
-                int available = (int) Math.min(net.getEntropyStored(), amount);
+                long available = Math.min(net.getEntropyStored(), amount);
                 if (!simulate && available > 0)
                     net.extractEntropy(available, level.getGameTime());
                 return available;
             } else {
-                int extracted = (int) Math.min(amount, entropyComponent.getEntropyStored());
+                long extracted = Math.min(amount, entropyComponent.getEntropyStored());
                 if (!simulate && extracted > 0)
                     entropyComponent.consumeEntropy(extracted);
                 return extracted;

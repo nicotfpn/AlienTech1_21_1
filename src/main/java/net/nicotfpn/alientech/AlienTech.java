@@ -39,6 +39,7 @@ public class AlienTech {
         ModCreativeModeTabs.register(modBus);
         net.nicotfpn.alientech.recipe.ModRecipes.register(modBus);
         net.nicotfpn.alientech.evolution.ModAttachments.register(modBus);
+        net.nicotfpn.alientech.item.data.ModDataComponents.REGISTRY.register(modBus);
 
         // Register event listeners
         modBus.addListener(this::onCommonSetup);
@@ -55,7 +56,7 @@ public class AlienTech {
     private void onCommonSetup(FMLCommonSetupEvent event) {
         // Register evolution abilities
         net.nicotfpn.alientech.evolution.ability.ModAbilities.register();
-        
+
         LOGGER.info("AlienTech common setup complete!");
     }
 

@@ -12,6 +12,11 @@ import net.nicotfpn.alientech.ui.sync.AlienContainerMenu;
 import net.minecraft.world.entity.player.Player;
 
 import net.nicotfpn.alientech.block.entity.ISideConfigurable;
+import net.nicotfpn.alientech.network.packet.ClientboundSideConfigPacket;
+import net.nicotfpn.alientech.network.packet.ServerboundSideConfigPacket;
+import net.nicotfpn.alientech.machine.core.AlienMachineBlockEntity;
+import net.nicotfpn.alientech.machine.core.component.SideConfigComponent;
+import net.minecraft.nbt.CompoundTag;
 
 /**
  * Registers and handles all network packets for AlienTech mod.
@@ -34,6 +39,18 @@ public class ModNetworking {
                 SideConfigPacket.TYPE,
                 SideConfigPacket.STREAM_CODEC,
                 ModNetworking::handleSideConfigServer);
+
+        // Serverbound SideConfig (Wave 3)
+        registrar.playToServer(
+                ServerboundSideConfigPacket.TYPE,
+                ServerboundSideConfigPacket.STREAM_CODEC,
+                ModNetworking::handleServerboundSideConfig);
+
+        // Clientbound SideConfig (Wave 3)
+        registrar.playToClient(
+                ClientboundSideConfigPacket.TYPE,
+                ClientboundSideConfigPacket.STREAM_CODEC,
+                ModNetworking::handleClientboundSideConfig);
 
         // Ability activation packet (client -> server)
         registrar.playToServer(
@@ -67,6 +84,45 @@ public class ModNetworking {
                     configurable.cycleModeReverse(packet.getRelativeSide());
                 } else {
                     configurable.cycleMode(packet.getRelativeSide());
+                }
+            }
+        });
+    }
+
+    private static void handleServerboundSideConfig(ServerboundSideConfigPacket packet, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            ServerPlayer player = (ServerPlayer) context.player();
+
+            if (player.blockPosition().distSqr(packet.machinePos()) > 64) {
+                return;
+            }
+
+            BlockEntity blockEntity = player.level().getBlockEntity(packet.machinePos());
+            if (blockEntity instanceof AlienMachineBlockEntity machine) {
+                if (machine.hasComponent(SideConfigComponent.class)) {
+                    SideConfigComponent config = machine.getComponent(SideConfigComponent.class);
+                    config.setMode(packet.face(), packet.capType(), packet.newMode());
+                    machine.setChanged();
+
+                    // Sincronizar de volta para o cliente
+                    CompoundTag tag = new CompoundTag();
+                    config.save(tag, player.level().registryAccess());
+                    context.reply(new ClientboundSideConfigPacket(packet.machinePos(), tag));
+                }
+            }
+        });
+    }
+
+    private static void handleClientboundSideConfig(ClientboundSideConfigPacket packet, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            net.minecraft.world.entity.player.Player player = context.player();
+            if (player != null && player.level() != null) {
+                BlockEntity blockEntity = player.level().getBlockEntity(packet.machinePos());
+                if (blockEntity instanceof AlienMachineBlockEntity machine) {
+                    if (machine.hasComponent(SideConfigComponent.class)) {
+                        machine.getComponent(SideConfigComponent.class).load(packet.fullSideConfigNBT(),
+                                player.level().registryAccess());
+                    }
                 }
             }
         });

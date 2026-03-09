@@ -194,7 +194,7 @@ public class EvolutionChamberBlockEntity extends AlienBlockEntity {
         }
 
         // Check if we can extract entropy for this tick
-        int availableEntropy = entropySource.extractEntropy(entropyPerTick, true);
+        long availableEntropy = entropySource.extractEntropy(entropyPerTick, true);
         if (availableEntropy < entropyPerTick) {
             // Not enough entropy - pause processing
             if (isProcessing) {
@@ -205,7 +205,7 @@ public class EvolutionChamberBlockEntity extends AlienBlockEntity {
         }
 
         // Consume entropy atomically (extract from source - entropy is consumed)
-        int extracted = entropySource.extractEntropy(entropyPerTick, false);
+        long extracted = entropySource.extractEntropy(entropyPerTick, false);
         if (extracted < entropyPerTick) {
             // Extraction failed - pause processing
             if (isProcessing) {

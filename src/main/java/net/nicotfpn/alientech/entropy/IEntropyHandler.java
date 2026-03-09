@@ -9,8 +9,7 @@ package net.nicotfpn.alientech.entropy;
  * It exists as an independent energy tier in the AlienTech progression chain:
  * Mob → Decay → Entropy → Gravitons → FE
  * <p>
- * Follows the same contract pattern as IEnergyStorage but with no FE
- * dependency.
+ * All values use {@code long} to prevent overflow at high scales.
  * Registered as a NeoForge BlockCapability via {@link ModCapabilities}.
  */
 public interface IEntropyHandler {
@@ -18,12 +17,12 @@ public interface IEntropyHandler {
     /**
      * @return current entropy stored
      */
-    int getEntropy();
+    long getEntropy();
 
     /**
      * @return maximum entropy capacity
      */
-    int getMaxEntropy();
+    long getMaxEntropy();
 
     /**
      * Insert entropy into this handler.
@@ -32,7 +31,7 @@ public interface IEntropyHandler {
      * @param simulate if true, do not actually modify storage
      * @return amount actually inserted
      */
-    int insertEntropy(int amount, boolean simulate);
+    long insertEntropy(long amount, boolean simulate);
 
     /**
      * Extract entropy from this handler.
@@ -41,7 +40,7 @@ public interface IEntropyHandler {
      * @param simulate if true, do not actually modify storage
      * @return amount actually extracted
      */
-    int extractEntropy(int amount, boolean simulate);
+    long extractEntropy(long amount, boolean simulate);
 
     /**
      * @return true if this handler can receive entropy

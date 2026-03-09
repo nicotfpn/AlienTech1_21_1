@@ -57,6 +57,9 @@ public class ModCreativeModeTabs {
 
                         // Phase 7: Entropy Transport
                         output.accept(ModBlocks.ENTROPY_CABLE.get());
+                        output.accept(ModBlocks.CABLE_BASIC.get());
+                        output.accept(ModBlocks.CABLE_ADVANCED.get());
+                        output.accept(ModBlocks.CABLE_ELITE.get());
                         output.accept(ModBlocks.EVOLUTION_CHAMBER.get());
 
                     })

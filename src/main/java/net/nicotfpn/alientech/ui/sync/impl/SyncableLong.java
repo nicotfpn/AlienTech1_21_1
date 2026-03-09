@@ -14,43 +14,63 @@ import java.util.function.LongSupplier;
 public class SyncableLong implements SyncableValue<Long> {
     private final LongSupplier getter;
     private final LongConsumer setter;
+
+    // Tracks the last value sent from the server. If the value is equal to this,
+    // the sync system assumes nothing changed.
+    // NOTE: We intentionally start as "dirty" so the client receives an initial
+    // state packet when the GUI is first opened.
     private long lastSyncedValue;
+    private boolean needsInitialSync = true;
+
+    private boolean isClientSide = false;
+    private long clientValue;
 
     public static SyncableLong create(LongSupplier getter, LongConsumer setter) {
         return new SyncableLong(getter, setter);
     }
 
-    private SyncableLong(LongSupplier getter, LongConsumer setter) {
+    public SyncableLong(LongSupplier getter, LongConsumer setter) {
         this.getter = getter;
         this.setter = setter;
-        // Seed initial sync tracking to the tile's current payload directly on
-        // construction
         this.lastSyncedValue = getter.getAsLong();
     }
 
     @Override
     public Long get() {
-        return getter.getAsLong();
+        return isClientSide ? clientValue : getter.getAsLong();
     }
 
     @Override
     public void set(Long val) {
-        setter.accept(val);
+        this.isClientSide = true;
+        this.clientValue = val;
+        if (setter != null) {
+            setter.accept(val);
+        }
     }
 
     @Override
     public boolean isDirty() {
-        return get() != lastSyncedValue;
+        if (isClientSide) {
+            // Client-side trackables are not synchronized from the client; only the
+            // server pushes updates.
+            return false;
+        }
+        if (needsInitialSync) {
+            return true;
+        }
+        return getter.getAsLong() != lastSyncedValue;
     }
 
     @Override
     public void markClean() {
-        lastSyncedValue = get();
+        needsInitialSync = false;
+        lastSyncedValue = getter.getAsLong();
     }
 
     @Override
     public void encode(RegistryFriendlyByteBuf buffer) {
-        buffer.writeVarLong(get());
+        buffer.writeVarLong(getter.getAsLong());
     }
 
     @Override

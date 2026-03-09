@@ -24,7 +24,6 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.nicotfpn.alientech.block.entity.ModBlockEntities;
 import net.nicotfpn.alientech.block.entity.PrimalCatalystBlockEntity;
-import net.nicotfpn.alientech.block.entity.base.AlienBlockEntity;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.EnumMap;
@@ -96,8 +95,9 @@ public class PrimalCatalystBlock extends Block implements EntityBlock {
             return null;
         }
         return createTickerHelper(type, ModBlockEntities.PRIMAL_CATALYST_BE.get(),
-                (pLevel, pPos, pState, pBlockEntity) -> AlienBlockEntity.tickServer(pLevel, pPos, pState,
-                        pBlockEntity));
+                (pLevel, pPos, pState, pBlockEntity) -> net.nicotfpn.alientech.machine.core.AlienMachineBlockEntity
+                        .tickServer(pLevel, pPos, pState,
+                                pBlockEntity));
     }
 
     @Nullable
@@ -140,7 +140,7 @@ public class PrimalCatalystBlock extends Block implements EntityBlock {
     @Override
     public int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
         if (level.getBlockEntity(pos) instanceof PrimalCatalystBlockEntity be) {
-            net.minecraft.world.item.ItemStack output = be.getInventory().getHandler()
+            net.minecraft.world.item.ItemStack output = be.getItemHandler()
                     .getStackInSlot(PrimalCatalystBlockEntity.OUTPUT_SLOT);
             if (output.isEmpty())
                 return 0;

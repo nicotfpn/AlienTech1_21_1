@@ -56,10 +56,10 @@ public class PyramidCoreScreen extends AbstractContainerScreen<PyramidCoreMenu> 
     }
 
     private void renderEntropyBar(GuiGraphics guiGraphics, int x, int y) {
-        int entropy = menu.getEntropy();
-        int maxEntropy = menu.getMaxEntropy();
+        long entropy = menu.getEntropy();
+        long maxEntropy = menu.getMaxEntropy();
         if (maxEntropy > 0) {
-            int fill = (int) ((float) entropy / maxEntropy * BAR_HEIGHT);
+            int fill = (int) (entropy * BAR_HEIGHT / maxEntropy);
             if (fill > 0) {
                 guiGraphics.blit(TEXTURE,
                         x + ENTROPY_X, y + BAR_TOP + (BAR_HEIGHT - fill),

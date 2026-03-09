@@ -3,10 +3,7 @@ package net.nicotfpn.alientech.screen;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.inventory.ContainerLevelAccess;
-import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -14,46 +11,45 @@ import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.items.SlotItemHandler;
 import net.nicotfpn.alientech.block.ModBlocks;
 import net.nicotfpn.alientech.block.entity.AncientChargerBlockEntity;
+import net.nicotfpn.alientech.ui.sync.AlienContainerMenu;
+import net.nicotfpn.alientech.ui.sync.impl.SyncableLong;
 
-public class AncientChargerMenu extends AbstractContainerMenu {
+public class AncientChargerMenu extends AlienContainerMenu {
 
     public final AncientChargerBlockEntity blockEntity;
-    private final ContainerData data;
+
+    // Sync Trackers
+    private final SyncableLong energy;
+    private final SyncableLong maxEnergy;
 
     public AncientChargerMenu(int containerId, Inventory inv, FriendlyByteBuf extraData) {
-        this(containerId, inv, inv.player.level().getBlockEntity(extraData.readBlockPos()),
-                new SimpleContainerData(12));
+        this(containerId, inv, inv.player.level().getBlockEntity(extraData.readBlockPos()));
     }
 
-    public AncientChargerMenu(int containerId, Inventory inv, BlockEntity entity, ContainerData data) {
-        super(ModMenuTypes.ANCIENT_CHARGER_MENU.get(), containerId);
-        checkContainerSize(inv, 1);
+    public AncientChargerMenu(int containerId, Inventory inv, BlockEntity entity) {
+        super(ModMenuTypes.ANCIENT_CHARGER_MENU.get(), containerId, inv.player);
         blockEntity = ((AncientChargerBlockEntity) entity);
-        this.data = data;
 
-        // Slot 0: Charge Slot (from alientech_gui_gen.py: centered in machine area, x=91, y=41)
+        // Slot 0: Charge Slot (from alientech_gui_gen.py: centered in machine area,
+        // x=91, y=41)
         this.addSlot(new SlotItemHandler(blockEntity.getItemHandler(), 0, 91, 41));
 
-        addDataSlots(data);
+        this.energy = new SyncableLong(() -> (long) blockEntity.getEnergyStorage().getEnergyStored(), null);
+        this.maxEnergy = new SyncableLong(() -> (long) blockEntity.getEnergyStorage().getMaxEnergyStored(), null);
+
+        track(energy);
+        track(maxEnergy);
 
         addPlayerInventory(inv);
         addPlayerHotbar(inv);
     }
 
-    public int getEnergyStored() {
-        return data.get(4) | (data.get(5) << 16);
+    public long getEnergyStored() {
+        return energy.get();
     }
 
-    public int getMaxEnergy() {
-        return data.get(6) | (data.get(7) << 16);
-    }
-
-    public int getEntropy() {
-        return data.get(8) | (data.get(9) << 16);
-    }
-
-    public int getMaxEntropy() {
-        return data.get(10) | (data.get(11) << 16);
+    public long getMaxEnergy() {
+        return maxEnergy.get();
     }
 
     public float getEnergyPercentage() {
@@ -62,9 +58,9 @@ public class AncientChargerMenu extends AbstractContainerMenu {
     }
 
     public int getScaledEnergy(int maxHeight) {
-        int energy = getEnergyStored();
-        int maxEnergy = getMaxEnergy();
-        return maxEnergy > 0 ? (int) ((long) energy * maxHeight / maxEnergy) : 0;
+        long e = getEnergyStored();
+        long maxE = getMaxEnergy();
+        return maxE > 0 ? (int) (e * maxHeight / maxE) : 0;
     }
 
     @Override

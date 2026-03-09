@@ -10,58 +10,115 @@ import net.nicotfpn.alientech.item.ModItems;
 import net.nicotfpn.alientech.item.custom.ActivatedEyeOfHorusItem;
 import net.nicotfpn.alientech.item.custom.ItemEnergyStorage;
 import net.nicotfpn.alientech.item.custom.PharaohSwordItem;
-import net.nicotfpn.alientech.machine.core.MachineCapabilities;
+import net.nicotfpn.alientech.machine.core.AlienMachineBlockEntity;
+import net.nicotfpn.alientech.block.entity.EnergyCableBlockEntity;
+import net.nicotfpn.alientech.block.entity.PrimalCatalystBlockEntity;
+import net.nicotfpn.alientech.block.entity.CreativeAncientBatteryBlockEntity;
 
 @EventBusSubscriber(modid = AlienTech.MOD_ID, bus = EventBusSubscriber.Bus.MOD)
 public class CommonModEvents {
 
         @SubscribeEvent
         public static void registerCapabilities(RegisterCapabilitiesEvent event) {
-                // Primal Catalyst — registered via MachineCapabilities (Energy + ItemHandler)
-                MachineCapabilities.registerMachine(event, ModBlockEntities.PRIMAL_CATALYST_BE.get());
+                // Primal Catalyst - Energy Storage
+                event.registerBlockEntity(
+                                Capabilities.EnergyStorage.BLOCK,
+                                ModBlockEntities.PRIMAL_CATALYST_BE.get(),
+                                (be, context) -> be.getEnergyStorage());
+
+                // Primal Catalyst - Item Handler
+                event.registerBlockEntity(
+                                Capabilities.ItemHandler.BLOCK,
+                                ModBlockEntities.PRIMAL_CATALYST_BE.get(),
+                                (be, context) -> {
+                                        if (be instanceof AlienMachineBlockEntity ambe && context != null) {
+                                                return ambe.getSidedItemHandler(context);
+                                        }
+                                        return be.getItemHandler();
+                                });
 
                 // Pyramid Core - Energy Storage (output from all sides)
                 event.registerBlockEntity(
                                 Capabilities.EnergyStorage.BLOCK,
                                 ModBlockEntities.PYRAMID_CORE_BE.get(),
-                                (be, context) -> be.getEnergyStorage());
+                                (be, context) -> {
+                                        if (be instanceof AlienMachineBlockEntity ambe && context != null) {
+                                                return ambe.getSidedEnergyStorage(context);
+                                        }
+                                        return be.getEnergyStorage();
+                                });
 
                 // Pyramid Core - Item Handler
                 event.registerBlockEntity(
                                 Capabilities.ItemHandler.BLOCK,
                                 ModBlockEntities.PYRAMID_CORE_BE.get(),
-                                (be, context) -> be.getItemHandler());
+                                (be, context) -> {
+                                        if (be instanceof AlienMachineBlockEntity ambe && context != null) {
+                                                return ambe.getSidedItemHandler(context);
+                                        }
+                                        return be.getItemHandler();
+                                });
 
                 // Ancient Charger - Energy Storage
                 event.registerBlockEntity(
                                 Capabilities.EnergyStorage.BLOCK,
                                 ModBlockEntities.ANCIENT_CHARGER_BE.get(),
-                                (be, context) -> be.getEnergyStorage());
+                                (be, context) -> {
+                                        if (be instanceof AlienMachineBlockEntity ambe && context != null) {
+                                                return ambe.getSidedEnergyStorage(context);
+                                        }
+                                        return be.getEnergyStorage();
+                                });
 
                 // Ancient Charger - Item Handler
                 event.registerBlockEntity(
                                 Capabilities.ItemHandler.BLOCK,
                                 ModBlockEntities.ANCIENT_CHARGER_BE.get(),
-                                (be, context) -> be.getItemHandler());
+                                (be, context) -> {
+                                        if (be instanceof AlienMachineBlockEntity ambe && context != null) {
+                                                return ambe.getSidedItemHandler(context);
+                                        }
+                                        return be.getItemHandler();
+                                });
 
                 // Ancient Battery - Energy Storage
                 event.registerBlockEntity(
                                 Capabilities.EnergyStorage.BLOCK,
                                 ModBlockEntities.ANCIENT_BATTERY_BE.get(),
-                                (be, context) -> be.getEnergyStorage());
+                                (be, context) -> {
+                                        if (be instanceof AlienMachineBlockEntity ambe && context != null) {
+                                                return ambe.getSidedEnergyStorage(context);
+                                        }
+                                        return be.getEnergyStorage();
+                                });
 
                 // Ancient Battery - Item Handler
                 event.registerBlockEntity(
                                 Capabilities.ItemHandler.BLOCK,
                                 ModBlockEntities.ANCIENT_BATTERY_BE.get(),
-                                (be, context) -> be.getItemHandler());
+                                (be, context) -> {
+                                        if (be instanceof AlienMachineBlockEntity ambe && context != null) {
+                                                return ambe.getSidedItemHandler(context);
+                                        }
+                                        return be.getItemHandler();
+                                });
+
+                // Energy Cables - Energy Storage (pass-through)
+                event.registerBlockEntity(
+                                Capabilities.EnergyStorage.BLOCK,
+                                ModBlockEntities.ENERGY_CABLE_BE.get(),
+                                (be, context) -> {
+                                        if (be instanceof EnergyCableBlockEntity cable)
+                                                return cable.getEnergyStorage();
+                                        return null;
+                                });
 
                 // Creative Ancient Battery - Energy Storage
                 event.registerBlockEntity(
                                 Capabilities.EnergyStorage.BLOCK,
                                 ModBlockEntities.CREATIVE_ANCIENT_BATTERY_BE.get(),
                                 (be, context) -> {
-                                        if (be instanceof net.nicotfpn.alientech.block.entity.CreativeAncientBatteryBlockEntity cab) {
+                                        if (be instanceof CreativeAncientBatteryBlockEntity cab) {
                                                 return cab.getEnergyStorage();
                                         }
                                         return null;
@@ -120,11 +177,16 @@ public class CommonModEvents {
                                 ModBlockEntities.DECAY_CHAMBER_CONTROLLER_BE.get(),
                                 (be, context) -> be.getEntropyStorage());
 
-                // Decay Chamber Controller - Item Handler (output inventory)
+                // Decay Chamber Controller - Item Handler
                 event.registerBlockEntity(
                                 Capabilities.ItemHandler.BLOCK,
                                 ModBlockEntities.DECAY_CHAMBER_CONTROLLER_BE.get(),
-                                (be, context) -> be.getOutputInventory());
+                                (be, context) -> {
+                                        if (be instanceof AlienMachineBlockEntity ambe && context != null) {
+                                                return ambe.getSidedItemHandler(context);
+                                        }
+                                        return be.getOutputInventory();
+                                });
 
                 // === Phase 4: Entropy Reservoir ===
                 // Entropy Reservoir - expose entropy capability for cables
@@ -143,13 +205,23 @@ public class CommonModEvents {
                 event.registerBlockEntity(
                                 Capabilities.EnergyStorage.BLOCK,
                                 ModBlockEntities.QUANTUM_VACUUM_TURBINE_BE.get(),
-                                (be, context) -> be.getEnergyStorage());
+                                (be, context) -> {
+                                        if (be instanceof AlienMachineBlockEntity ambe && context != null) {
+                                                return ambe.getSidedEnergyStorage(context);
+                                        }
+                                        return be.getEnergyStorage();
+                                });
 
                 // QVT - Item Handler (fuel input)
                 event.registerBlockEntity(
                                 Capabilities.ItemHandler.BLOCK,
                                 ModBlockEntities.QUANTUM_VACUUM_TURBINE_BE.get(),
-                                (be, context) -> be.getFuelInventory());
+                                (be, context) -> {
+                                        if (be instanceof AlienMachineBlockEntity ambe && context != null) {
+                                                return ambe.getSidedItemHandler(context);
+                                        }
+                                        return be.getFuelInventory();
+                                });
 
                 // === Phase 9: Evolution Chamber ===
 
@@ -168,7 +240,7 @@ public class CommonModEvents {
                                 net.nicotfpn.alientech.entropy.ModCapabilities.ENTROPY,
                                 ModBlockEntities.PRIMAL_CATALYST_BE.get(),
                                 (be, context) -> {
-                                        if (be instanceof net.nicotfpn.alientech.block.entity.PrimalCatalystBlockEntity pc)
+                                        if (be instanceof PrimalCatalystBlockEntity pc)
                                                 return pc.getEntropyHandler();
                                         return null;
                                 });

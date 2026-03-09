@@ -94,7 +94,7 @@ public class EntropyCableBlockEntity extends BlockEntity {
                 // Use transaction-safe transfer
                 EntropyTransaction transaction = EntropyTransaction.transfer(source, dest, transferRate);
                 if (transaction.isCommitted()) {
-                    int amount = transaction.getAmount();
+                    long amount = transaction.getAmount();
                     AlienTechDebug.ENTROPY.log("Cable transferred {} entropy from {} to {}",
                             amount, sourceDir, destDir);
                     // Transfer succeeded - continue to next destination

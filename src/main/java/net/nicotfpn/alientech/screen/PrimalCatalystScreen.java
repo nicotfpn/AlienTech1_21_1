@@ -82,8 +82,8 @@ public class PrimalCatalystScreen extends AbstractContainerScreen<PrimalCatalyst
     }
 
     private void renderEntropyBar(GuiGraphics guiGraphics, int x, int y) {
-        int entropy = menu.getEntropy();
-        int max = menu.getMaxEntropy();
+        long entropy = menu.getEntropy();
+        long max = menu.getMaxEntropy();
         if (max > 0) {
             int fill = (int) ((float) entropy / max * BAR_HEIGHT);
             if (fill > 0) {
@@ -96,8 +96,8 @@ public class PrimalCatalystScreen extends AbstractContainerScreen<PrimalCatalyst
     }
 
     private void renderEnergyBar(GuiGraphics guiGraphics, int x, int y) {
-        int energy = menu.getEnergy();
-        int max = menu.getMaxEnergy();
+        long energy = menu.getEnergy();
+        long max = menu.getMaxEnergy();
         if (max > 0) {
             int fill = (int) ((float) energy / max * BAR_HEIGHT);
             if (fill > 0) {

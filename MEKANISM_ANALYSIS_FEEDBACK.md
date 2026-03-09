@@ -41,13 +41,15 @@ O Mekanism é **BRUTAL** nisso. O framework de multiblock dele gera um `UUID` ú
 ## 🖥️ 3. Sincronização Server/Client (Gui & Containers)
 
 **Como o AlienTech faz hoje:**
-Geralmente, no Minecraft vanilla a gente reescreve muitos `DataSlots` inteiros (Shorts/Ints) no `AbstractContainerMenu`. Para valores gigantescos (como nossa energia ou limites de entropia), os ints do Minecraft podem estourar (limitados a 32-bit `2,147,483,647` no `DataSlot`). E pacotes gigantes pesam a rede.
+O mod já tem uma implementação “Mekanism-like” usando `AlienContainerMenu` + `SyncableValue`/`SyncableLong`, o que evita os limites de 32-bit do `DataSlot` e reduz drasticamente o tráfego de rede. No entanto, havia um problema clássico: o cliente ao abrir uma GUI recebia valores zerados porque o servidor só enviava atualizações quando algo mudava (e a primeira sincronização jamais ocorria).
 
 **Como o Mekanism faz (`MekanismContainer.java`):**
 O Mekanism criou uma abstração impecável chamada `ISyncableData` (com classes como `SyncableLong`, `SyncableFluidStack`, e `SyncableChemicalStack`).
 - O Container do Servidor só manda um pacote **quando o valor exato no setter sofre uma mutação detectada (isDirty)**.
 - O cliente recebe pedaços incrivelmente pequenos. Se a máquina parar, a rede não transmite mais NADA relacionado aquela máquina, enquanto as GUIs vanilla costumam fazer polling burro.
+- Crucialmente, o Mekanism garante **sync inicial**: o container ALWAYS manda o estado inicial quando o player abre a GUI.
 
 **🚀 O que podemos melhorar no AlienTech:**
+- Certificar que o `SyncableLong` envia o estado inicial no primeiro `broadcastChanges()` após o container ser aberto (fix já aplicado).
 - As nossas variáveis de Entropia já estão lidando com números absurdos (ex: Stage 5 requer 1,000,000 de Entropia). Isso é tranquilo para ints, mas se expandirmos para tiers cósmicos, vamos estourar.
-- Adotar o padrão `SyncableValue` no nosso framework de UI para sincronizar dados apenas por **Deltas de Modificação** (Dirty tracking) em vez de enviar o state completo, melhorando o multiplayer exponencialmente caso muitas `Turbinas de Vácuo Quântico` ou `Câmaras de Decaimento` estejam operando juntas na mesma chunk.
+- Consolidar a lógica de sincronização em uma base reutilizável (ex: `SyncableValue`/`SyncableLong`) e garantir que todas as GUIs de máquina usem o mesmo padrão, evitando que alguma ainda caia de volta nos `DataSlot` ou em `NetworkHooks.openGui` com pacotes pesados.

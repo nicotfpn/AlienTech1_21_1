@@ -17,10 +17,14 @@ import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.nicotfpn.alientech.Config;
-import net.nicotfpn.alientech.block.entity.base.AbstractMachineBlockEntity;
 import net.nicotfpn.alientech.client.IHudProvider;
-import net.nicotfpn.alientech.machine.core.IMachineProcess;
-import net.nicotfpn.alientech.machine.core.SlotAccessRules;
+import net.nicotfpn.alientech.machine.core.AlienMachineBlockEntity;
+import net.nicotfpn.alientech.machine.core.component.EnergyComponent;
+import net.nicotfpn.alientech.machine.core.component.InventoryComponent;
+import net.nicotfpn.alientech.machine.core.component.SideConfigComponent;
+import net.nicotfpn.alientech.machine.core.component.AutoTransferComponent;
+import net.nicotfpn.alientech.network.sideconfig.CapabilityType;
+import net.nicotfpn.alientech.network.sideconfig.IOSideMode;
 import net.nicotfpn.alientech.screen.AncientChargerMenu;
 import net.nicotfpn.alientech.util.EnergyUtils;
 import org.jetbrains.annotations.NotNull;
@@ -28,16 +32,16 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Predicate;
-import java.util.function.ToIntFunction;
 
 /**
  * AncientCharger — High-throughput automated energy buffer and item
  * workstation.
- * Ported to AbstractMachineBlockEntity framework.
+ * ECS Architecture:
+ * - {@link InventoryComponent}: 1 slot (charge item)
+ * - {@link EnergyComponent}: large FE buffer
  */
-public class AncientChargerBlockEntity extends AbstractMachineBlockEntity
-        implements IMachineProcess, SlotAccessRules, IHudProvider {
+public class AncientChargerBlockEntity extends AlienMachineBlockEntity
+        implements net.minecraft.world.MenuProvider, IHudProvider {
 
     public static final int MAX_TRANSFER = 100_000;
     private static final int CACHE_REFRESH_INTERVAL = 100;
@@ -47,36 +51,82 @@ public class AncientChargerBlockEntity extends AbstractMachineBlockEntity
     private final List<BlockPos> cachedBatteries = new ArrayList<>();
     private long lastCacheUpdate = 0;
 
+    // ==================== Components ====================
+    public final InventoryComponent inventoryComponent;
+    public final EnergyComponent energyComponent;
+    public final SideConfigComponent sideConfig;
+    public final AutoTransferComponent autoTransfer;
+
+    // ==================== Constructor ====================
+
     public AncientChargerBlockEntity(BlockPos pos, BlockState state) {
-        super(ModBlockEntities.ANCIENT_CHARGER_BE.get(), pos, state,
-                Config.CHARGER_CAPACITY.get(), MAX_TRANSFER, MAX_TRANSFER, SLOT_COUNT);
+        super(ModBlockEntities.ANCIENT_CHARGER_BE.get(), pos, state);
+
+        this.inventoryComponent = new InventoryComponent(this, SLOT_COUNT, this::isSlotValid) {
+            @Override
+            public void save(CompoundTag tag, HolderLookup.Provider provider) {
+                super.save(tag, provider);
+            }
+        };
+        registerComponent(this.inventoryComponent);
+
+        this.energyComponent = new EnergyComponent(this,
+                Config.CHARGER_CAPACITY.get(), MAX_TRANSFER, MAX_TRANSFER);
+        registerComponent(this.energyComponent);
+
+        // Wave 3: Side Configuration
+        this.sideConfig = new SideConfigComponent(this);
+        registerComponent(this.sideConfig);
+
+        // Wave 3: Auto Transfer
+        this.autoTransfer = new AutoTransferComponent(this);
+        this.autoTransfer.injectSideConfig(this.sideConfig);
+        registerComponent(this.autoTransfer);
+
+        // Inicializar wrappers
+        initSidedWrappers();
     }
 
+    private boolean isSlotValid(int slot, @NotNull ItemStack stack) {
+        return stack.getCapability(Capabilities.EnergyStorage.ITEM) != null;
+    }
+
+    // ==================== Tick Logic ====================
+
     @Override
-    protected void onUpdateServer() {
-        if (level == null)
+    public void tickServer() {
+        if (level == null || level.isClientSide)
             return;
+
         if (level.getGameTime() - lastCacheUpdate > CACHE_REFRESH_INTERVAL) {
             refreshNeighborCache(level, worldPosition);
         }
-        handleEnergyIO(level);
-        super.onUpdateServer();
-        chargeDockedItem();
+
+        boolean didWork = handleEnergyIO(level);
+        didWork |= chargeDockedItem();
+
+        if (didWork) {
+            setChanged();
+        }
+
+        super.tickServer();
     }
 
-    private void chargeDockedItem() {
-        ItemStack stack = inventory.getHandler().getStackInSlot(0);
-        if (!stack.isEmpty() && energy.getEnergyStored() > 0) {
+    private boolean chargeDockedItem() {
+        ItemStack stack = inventoryComponent.getHandler().getStackInSlot(0);
+        if (!stack.isEmpty() && energyComponent.getEnergyStorage().getEnergyStored() > 0) {
             IEnergyStorage itemEnergy = stack.getCapability(Capabilities.EnergyStorage.ITEM);
             if (itemEnergy != null && itemEnergy.canReceive()) {
-                int accepted = itemEnergy.receiveEnergy(Math.min(MAX_TRANSFER, energy.getEnergyStored()), false);
+                int accepted = itemEnergy.receiveEnergy(
+                        Math.min(MAX_TRANSFER, energyComponent.getEnergyStorage().getEnergyStored()), false);
                 if (accepted > 0) {
-                    energy.getEnergyStorage().extractEnergy(accepted, false);
-                    inventory.getHandler().setStackInSlot(0, stack);
-                    setChanged();
+                    energyComponent.getEnergyStorage().extractEnergy(accepted, false);
+                    inventoryComponent.getHandler().setStackInSlot(0, stack);
+                    return true;
                 }
             }
         }
+        return false;
     }
 
     private void refreshNeighborCache(Level level, BlockPos center) {
@@ -86,108 +136,65 @@ public class AncientChargerBlockEntity extends AbstractMachineBlockEntity
             if (pos.equals(center))
                 return;
             BlockEntity be = level.getBlockEntity(pos);
-            if (be instanceof PyramidCoreBlockEntity)
+            if (be instanceof PyramidCoreBlockEntity) {
                 cachedCores.add(pos.immutable());
-            else if (be instanceof AncientBatteryBlockEntity)
+            } else if (be instanceof AncientBatteryBlockEntity) {
                 cachedBatteries.add(pos.immutable());
+            }
         });
         lastCacheUpdate = level.getGameTime();
     }
 
-    private void handleEnergyIO(Level level) {
-        if (energy.getEnergyStored() < energy.getCapacity()) {
+    private boolean handleEnergyIO(Level level) {
+        boolean didWork = false;
+        if (energyComponent.getEnergyStorage().getEnergyStored() < energyComponent.getEnergyStorage()
+                .getMaxEnergyStored()) {
             for (BlockPos pos : cachedCores) {
+                Direction dir = Direction.getNearest(pos.getX() - worldPosition.getX(),
+                        pos.getY() - worldPosition.getY(), pos.getZ() - worldPosition.getZ());
+                if (sideConfig.getMode(dir, CapabilityType.ENERGY) != IOSideMode.INPUT &&
+                        sideConfig.getMode(dir, CapabilityType.ENERGY) != IOSideMode.PULL) {
+                    continue;
+                }
                 IEnergyStorage coreCap = level.getCapability(Capabilities.EnergyStorage.BLOCK, pos, null);
                 if (coreCap != null && coreCap.canExtract()) {
-                    EnergyUtils.pullEnergy(energy.getStorage(), coreCap, MAX_TRANSFER);
+                    if (EnergyUtils.pullEnergy(energyComponent.getEnergyStorage(), coreCap, MAX_TRANSFER) > 0)
+                        didWork = true;
                 }
             }
         }
-        if (energy.getEnergyStored() > 0) {
+        if (energyComponent.getEnergyStorage().getEnergyStored() > 0) {
             for (BlockPos pos : cachedBatteries) {
+                Direction dir = Direction.getNearest(pos.getX() - worldPosition.getX(),
+                        pos.getY() - worldPosition.getY(), pos.getZ() - worldPosition.getZ());
+                if (sideConfig.getMode(dir, CapabilityType.ENERGY) != IOSideMode.OUTPUT &&
+                        sideConfig.getMode(dir, CapabilityType.ENERGY) != IOSideMode.PUSH) {
+                    continue;
+                }
                 IEnergyStorage batCap = level.getCapability(Capabilities.EnergyStorage.BLOCK, pos, null);
                 if (batCap != null && batCap.canReceive()) {
-                    EnergyUtils.pushEnergy(energy.getStorage(), batCap, MAX_TRANSFER);
+                    if (EnergyUtils.pushEnergy(energyComponent.getEnergyStorage(), batCap, MAX_TRANSFER) > 0)
+                        didWork = true;
                 }
             }
         }
+        return didWork;
     }
 
-    @Override
-    public boolean canProcess() {
-        return false;
-    }
-
-    @Override
-    public void onProcessComplete() {
-    }
-
-    @Override
-    public int getProcessTime() {
-        return 0;
-    }
-
-    @Override
-    public int getEnergyCost() {
-        return 0;
-    }
-
-    @Override
-    protected IMachineProcess getProcess() {
-        return this;
-    }
-
-    @Override
-    public SlotAccessRules getSlotAccessRules() {
-        return this;
-    }
-
-    @Override
-    protected int getFuelSlot() {
-        return -1;
-    }
-
-    @Override
-    protected int[] getOutputSlots() {
-        return new int[0];
-    }
-
-    @Override
-    protected Predicate<ItemStack> getFuelValidator() {
-        return stack -> false;
-    }
-
-    @Override
-    protected ToIntFunction<ItemStack> getBurnTimeFunction() {
-        return stack -> 0;
-    }
-
-    @Override
-    protected boolean isSlotValid(int slot, @NotNull ItemStack stack) {
-        return stack.getCapability(Capabilities.EnergyStorage.ITEM) != null;
-    }
-
-    @Override
-    public boolean canInsert(int slot, @NotNull ItemStack stack, @Nullable Direction side) {
-        return isSlotValid(slot, stack);
-    }
-
-    @Override
-    public boolean canExtract(int slot, @Nullable Direction side) {
-        return true;
-    }
+    // ==================== IHudProvider ====================
 
     @Override
     public void addHudLines(List<Component> lines) {
-        String storedText = EnergyUtils.formatCompact(energy.getEnergyStored());
-        String maxText = EnergyUtils.formatCompact(energy.getCapacity());
+        String storedText = EnergyUtils.formatCompact(energyComponent.getEnergyStorage().getEnergyStored());
+        String maxText = EnergyUtils.formatCompact(energyComponent.getEnergyStorage().getMaxEnergyStored());
         lines.add(Component.literal("\u26A1 " + storedText + " / " + maxText + " FE").withColor(0xD4AF37));
-        ItemStack stack = inventory.getHandler().getStackInSlot(0);
+
+        ItemStack stack = inventoryComponent.getHandler().getStackInSlot(0);
         if (!stack.isEmpty()) {
             IEnergyStorage itemEnergy = stack.getCapability(Capabilities.EnergyStorage.ITEM);
             if (itemEnergy != null && itemEnergy.getMaxEnergyStored() > 0) {
                 int pct = (int) (100.0f * itemEnergy.getEnergyStored() / itemEnergy.getMaxEnergyStored());
-                boolean isCharging = energy.getEnergyStored() > 0
+                boolean isCharging = energyComponent.getEnergyStorage().getEnergyStored() > 0
                         && itemEnergy.getEnergyStored() < itemEnergy.getMaxEnergyStored();
                 lines.add(Component.literal(isCharging ? "⚡ Charging: " : (pct >= 100 ? "✔ Full: " : "⏳ Waiting: "))
                         .withColor(isCharging ? 0x55FF55 : (pct >= 100 ? 0x00FFAA : 0xFF5555))
@@ -196,10 +203,10 @@ public class AncientChargerBlockEntity extends AbstractMachineBlockEntity
         }
     }
 
-    @Override
-    protected void onUpdateClient() {
-        if (energy.getEnergyStored() > 0 && level != null) {
-            if (energy.getEnergyStored() < energy.getCapacity() && level.random.nextInt(4) == 0) {
+    public void tickClient() {
+        if (energyComponent.getEnergyStorage().getEnergyStored() > 0 && level != null) {
+            if (energyComponent.getEnergyStorage().getEnergyStored() < energyComponent.getEnergyStorage()
+                    .getMaxEnergyStored() && level.random.nextInt(4) == 0) {
                 double x = worldPosition.getX() + 0.5 + (level.random.nextDouble() - 0.5) * 0.4;
                 double y = worldPosition.getY() + 0.3 + level.random.nextDouble() * 0.4;
                 double z = worldPosition.getZ() + 0.5 + (level.random.nextDouble() - 0.5) * 0.4;
@@ -207,6 +214,18 @@ public class AncientChargerBlockEntity extends AbstractMachineBlockEntity
             }
         }
     }
+
+    // ==================== Accessors ====================
+
+    public IItemHandler getItemHandler() {
+        return inventoryComponent.getHandler();
+    }
+
+    public IEnergyStorage getEnergyStorage() {
+        return energyComponent.getEnergyStorage();
+    }
+
+    // ==================== MenuProvider ====================
 
     @Override
     public @NotNull Component getDisplayName() {
@@ -217,20 +236,37 @@ public class AncientChargerBlockEntity extends AbstractMachineBlockEntity
     @Override
     public AbstractContainerMenu createMenu(int containerId, @NotNull Inventory playerInventory,
             @NotNull Player player) {
-        return new AncientChargerMenu(containerId, playerInventory, this, this.data);
+        return new AncientChargerMenu(containerId, playerInventory, this);
     }
 
-    public IItemHandler getItemHandler() {
-        return inventory.getHandler();
-    }
+    // ==================== Persistence ====================
 
     @Override
     public void loadAdditional(@NotNull CompoundTag tag, @NotNull HolderLookup.Provider provider) {
         super.loadAdditional(tag, provider);
+
+        // Legacy NBT Migration
+        if (!tag.contains("Components")) {
+            if (tag.contains("MachineEnergy")) {
+                CompoundTag et = tag.getCompound("MachineEnergy");
+                if (et.contains("Stored")) {
+                    energyComponent.getEnergyStorage().setEnergy(et.getInt("Stored"));
+                }
+            }
+        }
     }
 
     @Override
     public void saveAdditional(@NotNull CompoundTag tag, @NotNull HolderLookup.Provider provider) {
         super.saveAdditional(tag, provider);
+    }
+
+    // ==================== Drops ====================
+
+    @Override
+    public void drops() {
+        if (level != null) {
+            inventoryComponent.dropAll(level, worldPosition);
+        }
     }
 }

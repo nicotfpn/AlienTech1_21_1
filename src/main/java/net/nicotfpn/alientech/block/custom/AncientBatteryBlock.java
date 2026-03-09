@@ -115,10 +115,10 @@ public class AncientBatteryBlock extends Block implements EntityBlock {
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state,
             BlockEntityType<T> type) {
+        if (level.isClientSide())
+            return null;
         return createTickerHelper(type, ModBlockEntities.ANCIENT_BATTERY_BE.get(),
-                level.isClientSide()
-                        ? net.nicotfpn.alientech.block.entity.base.AlienBlockEntity::tickClient
-                        : net.nicotfpn.alientech.block.entity.base.AlienBlockEntity::tickServer);
+                (lvl, pos, st, be) -> be.tickServer());
     }
 
     @Nullable

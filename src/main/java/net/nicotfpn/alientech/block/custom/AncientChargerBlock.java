@@ -128,10 +128,12 @@ public class AncientChargerBlock extends BaseEntityBlock {
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state,
             BlockEntityType<T> type) {
+        if (level.isClientSide()) {
+            return createTickerHelper(type, ModBlockEntities.ANCIENT_CHARGER_BE.get(),
+                    (lvl, pos, st, be) -> be.tickClient());
+        }
         return createTickerHelper(type, ModBlockEntities.ANCIENT_CHARGER_BE.get(),
-                level.isClientSide()
-                        ? net.nicotfpn.alientech.block.entity.base.AlienBlockEntity::tickClient
-                        : net.nicotfpn.alientech.block.entity.base.AlienBlockEntity::tickServer);
+                (lvl, pos, st, be) -> be.tickServer());
     }
 
     // ==================== Comparator Output ====================

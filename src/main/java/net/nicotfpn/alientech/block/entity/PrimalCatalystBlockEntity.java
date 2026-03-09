@@ -1,7 +1,8 @@
 package net.nicotfpn.alientech.block.entity;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -11,94 +12,148 @@ import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.level.block.state.BlockState;
 import net.nicotfpn.alientech.Config;
-import net.nicotfpn.alientech.block.entity.base.AbstractMachineBlockEntity;
-import net.nicotfpn.alientech.machine.core.IMachineProcess;
-import net.nicotfpn.alientech.machine.core.SlotAccessRules;
+import net.nicotfpn.alientech.machine.core.AlienMachineBlockEntity;
+import net.nicotfpn.alientech.machine.core.component.EnergyComponent;
+import net.nicotfpn.alientech.machine.core.component.EntropyComponent;
+import net.nicotfpn.alientech.machine.core.component.InventoryComponent;
+import net.nicotfpn.alientech.machine.core.component.ProcessingComponent;
+import net.nicotfpn.alientech.machine.core.component.SideConfigComponent;
+import net.nicotfpn.alientech.machine.core.component.AutoTransferComponent;
+import net.nicotfpn.alientech.pyramid.PyramidNetwork;
+import net.nicotfpn.alientech.pyramid.PyramidTier;
 import net.nicotfpn.alientech.recipe.ModRecipes;
 import net.nicotfpn.alientech.recipe.PrimalCatalystRecipe;
 import net.nicotfpn.alientech.recipe.PrimalCatalystRecipeInput;
 import net.nicotfpn.alientech.screen.PrimalCatalystMenu;
+import net.nicotfpn.alientech.util.SafeNBT;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
-import java.util.function.Predicate;
-import java.util.function.ToIntFunction;
 
 /**
- * Primal Catalyst — A 3-input processing machine with hybrid energy/fuel
- * support.
- *
- * Built on the component-based AbstractMachineBlockEntity framework.
- * Implements only: slot layout, fuel/output config, sided rules, and recipe
- * logic.
- *
- * Slot layout:
- * 0, 1, 2 = Input slots
- * 3 = Fuel slot (coal_block only)
- * 4 = Output slot
- *
- * Sided automation:
- * TOP → insert into input slots (0, 1, 2)
- * SIDES → insert into fuel slot (3)
- * BOTTOM → extract from output slot (4)
+ * Primal Catalyst — A 3-input processing machine driven by Entropy.
+ * <p>
+ * ECS Architecture:
+ * - {@link InventoryComponent}: 5 slots (3 inputs + 1 fuel[inert] + 1 output)
+ * - {@link EnergyComponent}: optional FE buffer for display/compat
+ * - {@link EntropyComponent}: local entropy buffer pulled from PyramidNetwork
+ * - {@link ProcessingComponent}: manages recipe progress tick loop
  */
-public class PrimalCatalystBlockEntity extends AbstractMachineBlockEntity implements IMachineProcess, SlotAccessRules {
+public class PrimalCatalystBlockEntity extends AlienMachineBlockEntity implements net.minecraft.world.MenuProvider {
 
-    // ==================== Slot Constants (PRESERVED) ====================
+    // ==================== Slot Constants ====================
     public static final int INPUT_SLOT_1 = 0;
     public static final int INPUT_SLOT_2 = 1;
     public static final int INPUT_SLOT_3 = 2;
-    public static final int FUEL_SLOT = 3;
+    public static final int FUEL_SLOT = 3; // deprecated/inert, kept for slot layout compat
     public static final int OUTPUT_SLOT = 4;
     private static final int SLOT_COUNT = 5;
 
-    // ==================== Energy Constants ====================
-    private static final int DEFAULT_CAPACITY = 100_000;
-    private static final int MAX_RECEIVE = 1_000;
-    private static final int MAX_EXTRACT = 0;
+    // ==================== Components ====================
+    public final InventoryComponent inventoryComponent;
+    public final EnergyComponent energyComponent;
+    public final EntropyComponent entropyComponent;
+    public final ProcessingComponent processingComponent;
+    public final SideConfigComponent sideConfig;
+    public final AutoTransferComponent autoTransfer;
 
-    // ==================== Fuel Constants ====================
-    
-
-    // ==================== Entropy Buffer ====================
-    private final net.nicotfpn.alientech.entropy.EntropyStorage entropyStorage = new net.nicotfpn.alientech.entropy.EntropyStorage(
-            Config.PRIMAL_CATALYST_CAPACITY.get(), () -> {
-                setChanged();
-                markForSync();
-            });
-
-    // ==================== Cached Recipe ====================
+    // ==================== Recipe Cache ====================
     private PrimalCatalystRecipe cachedRecipe = null;
     private boolean recipeCacheDirty = true;
 
     // ==================== Constructor ====================
 
     public PrimalCatalystBlockEntity(BlockPos pos, BlockState state) {
-        super(ModBlockEntities.PRIMAL_CATALYST_BE.get(), pos, state,
-                DEFAULT_CAPACITY, MAX_RECEIVE, MAX_EXTRACT, SLOT_COUNT);
+        super(ModBlockEntities.PRIMAL_CATALYST_BE.get(), pos, state);
+
+        this.inventoryComponent = new InventoryComponent(this, SLOT_COUNT, this::isSlotValid) {
+            @Override
+            public void save(net.minecraft.nbt.CompoundTag tag, net.minecraft.core.HolderLookup.Provider provider) {
+                super.save(tag, provider);
+            }
+            // onContentsChanged in ItemStackHandler already calls tile.setChanged()
+            // We piggyback by checking recipeCacheDirty on each canProcess() call
+        };
+        registerComponent(this.inventoryComponent);
+
+        this.energyComponent = new EnergyComponent(this,
+                Config.PRIMAL_CATALYST_CAPACITY.get(), 1000, 0);
+        registerComponent(this.energyComponent);
+
+        this.entropyComponent = new EntropyComponent(this, Config.PRIMAL_CATALYST_CAPACITY.get());
+        registerComponent(this.entropyComponent);
+
+        this.processingComponent = new ProcessingComponent(this,
+                () -> Config.PRIMAL_CATALYST_PROCESS_TIME.get(),
+                this::onProcessComplete);
+        registerComponent(this.processingComponent);
+
+        this.sideConfig = new SideConfigComponent(this);
+        registerComponent(this.sideConfig);
+
+        this.autoTransfer = new AutoTransferComponent(this);
+        this.autoTransfer.injectSideConfig(this.sideConfig);
+        registerComponent(this.autoTransfer);
+
+        initSidedWrappers();
     }
 
-    // ==================== IMachineProcess Implementation ====================
+    // ==================== Slot Validation ====================
+
+    private boolean isSlotValid(int slot, @NotNull ItemStack stack) {
+        return slot != OUTPUT_SLOT && slot != FUEL_SLOT;
+    }
+
+    // ==================== Core Tick Logic ====================
 
     @Override
-    public boolean canProcess() {
+    public void tickServer() {
+        if (level == null || level.isClientSide)
+            return;
+
+        // Pull entropy from PyramidNetwork every tick if we have space
+        long space = entropyComponent.getMaxEntropy() - entropyComponent.getEntropyStored();
+        if (space > 0) {
+            long cap = (long) Config.ENTROPY_CABLE_TRANSFER_RATE.get();
+            long pulled = PyramidNetwork.get(level).extractEntropy(Math.min(space, cap), false);
+            if (pulled > 0)
+                entropyComponent.addEntropy(pulled);
+        }
+
+        // Determine if we can work
+        boolean canWork = canProcess();
+        processingComponent.setWorking(canWork);
+
+        super.tickServer(); // Ticks ProcessingComponent (advances progress)
+
+        setChanged();
+    }
+
+    private boolean canProcess() {
         if (level == null)
             return false;
 
-        // Invalidate cache when inventory changes
+        // Check entropy
+        long entropyPerTick = Config.PRIMAL_CATALYST_ENERGY_PER_TICK.get();
+        if (entropyComponent.getEntropyStored() < entropyPerTick)
+            return false;
+
+        // Check pyramid tier
+        PyramidTier tier = PyramidNetwork.get(level).getTier();
+        if (tier == PyramidTier.NONE)
+            return false;
+
         if (recipeCacheDirty) {
             cachedRecipe = findRecipe();
             recipeCacheDirty = false;
         }
-
         if (cachedRecipe == null)
             return false;
 
-        // Check output slot has space
-        ItemStack outputStack = inventory.getHandler().getStackInSlot(OUTPUT_SLOT);
+        // Check output space
+        ItemStack outputStack = inventoryComponent.getHandler().getStackInSlot(OUTPUT_SLOT);
         ItemStack recipeResult = cachedRecipe.getResult();
-
         if (outputStack.isEmpty())
             return true;
         if (!ItemStack.isSameItemSameComponents(outputStack, recipeResult))
@@ -106,155 +161,30 @@ public class PrimalCatalystBlockEntity extends AbstractMachineBlockEntity implem
         return outputStack.getCount() + recipeResult.getCount() <= outputStack.getMaxStackSize();
     }
 
-    @Override
-    public void onProcessComplete() {
+    private void onProcessComplete() {
         if (cachedRecipe == null)
             return;
 
-        // Consume one of each input
-        inventory.getHandler().extractItem(INPUT_SLOT_1, 1, false);
-        inventory.getHandler().extractItem(INPUT_SLOT_2, 1, false);
-        inventory.getHandler().extractItem(INPUT_SLOT_3, 1, false);
+        // Consume inputs
+        inventoryComponent.getHandler().extractItem(INPUT_SLOT_1, 1, false);
+        inventoryComponent.getHandler().extractItem(INPUT_SLOT_2, 1, false);
+        inventoryComponent.getHandler().extractItem(INPUT_SLOT_3, 1, false);
 
         // Produce output
         ItemStack result = cachedRecipe.getResult();
-        ItemStack currentOutput = inventory.getHandler().getStackInSlot(OUTPUT_SLOT);
-
-        if (currentOutput.isEmpty()) {
-            inventory.getHandler().setStackInSlot(OUTPUT_SLOT, result.copy());
+        ItemStack current = inventoryComponent.getHandler().getStackInSlot(OUTPUT_SLOT);
+        if (current.isEmpty()) {
+            inventoryComponent.getHandler().setStackInSlot(OUTPUT_SLOT, result.copy());
         } else {
-            currentOutput.grow(result.getCount());
+            current.grow(result.getCount());
         }
 
-        // Invalidate recipe cache after crafting
+        // Consume entropy for this craft
+        long entropyPerTick = Config.PRIMAL_CATALYST_ENERGY_PER_TICK.get();
+        entropyComponent.consumeEntropy(entropyPerTick);
+
         recipeCacheDirty = true;
-    }
-
-    @Override
-    public int getProcessTime() {
-        return Config.PRIMAL_CATALYST_PROCESS_TIME.get();
-    }
-
-    @Override
-    public int getEnergyCost() {
-        int baseCost = Config.PRIMAL_CATALYST_ENERGY_PER_TICK.get();
-        if (cachedRecipe != null) {
-            return Math.round(baseCost * cachedRecipe.getEnergyModifier());
-        }
-        return baseCost;
-    }
-
-    // ==================== SlotAccessRules Implementation ====================
-
-    @Override
-    public boolean canInsert(int slot, @NotNull ItemStack stack, @Nullable Direction side) {
-        if (side == null) {
-            // Internal access (GUI): allow inputs and fuel, deny output
-            return slot != OUTPUT_SLOT; // keep slot layout for save compatibility, but fuel slot is inert
-        }
-        return switch (side) {
-            case UP -> slot >= INPUT_SLOT_1 && slot <= INPUT_SLOT_3;
-            case DOWN -> false;
-            default -> false; // disallow inserting fuel via automation; fuel removed
-        };
-    }
-
-    @Override
-    public boolean canExtract(int slot, @Nullable Direction side) {
-        if (side == null)
-            return true;
-        return side == Direction.DOWN && slot == OUTPUT_SLOT;
-    }
-
-    // ==================== Framework Hooks ====================
-
-    @Override
-    protected IMachineProcess getProcess() {
-        return this;
-    }
-
-    @Override
-    public SlotAccessRules getSlotAccessRules() {
-        return this;
-    }
-
-    @Override
-    protected boolean isSlotValid(int slot, @NotNull ItemStack stack) {
-        if (slot == OUTPUT_SLOT)
-            return false;
-        if (slot == FUEL_SLOT)
-            return false; // Fuel slot deprecated
-        return true;
-    }
-
-    @Override
-    protected int getFuelSlot() {
-        return -1; // no active fuel slot
-    }
-
-    @Override
-    protected int[] getOutputSlots() {
-        return new int[] { OUTPUT_SLOT };
-    }
-
-    @Override
-    protected Predicate<ItemStack> getFuelValidator() {
-        return stack -> false;
-    }
-
-    @Override
-    protected ToIntFunction<ItemStack> getBurnTimeFunction() {
-        return stack -> 0;
-    }
-
-    // ==================== Entropy Integration ====================
-
-    @Override
-    protected net.nicotfpn.alientech.entropy.EntropyStorage getEntropyStorage() {
-        return entropyStorage;
-    }
-
-    /** Public entropy handler accessor for capability registration. */
-    public net.nicotfpn.alientech.entropy.IEntropyHandler getEntropyHandler() {
-        return entropyStorage;
-    }
-
-    @Override
-    protected int getEntropyPerTick() {
-        return getEnergyCost();
-    }
-
-    @Override
-    protected int getFEPerTick() {
-        return getEnergyCost();
-    }
-
-    @Override
-    public void saveAdditional(@NotNull net.minecraft.nbt.CompoundTag tag, @NotNull net.minecraft.core.HolderLookup.Provider provider) {
-        super.saveAdditional(tag, provider);
-        net.minecraft.nbt.CompoundTag t = new net.minecraft.nbt.CompoundTag();
-        entropyStorage.save(t);
-        tag.put("PrimalEntropy", t);
-    }
-
-    @Override
-    public void loadAdditional(@NotNull net.minecraft.nbt.CompoundTag tag, @NotNull net.minecraft.core.HolderLookup.Provider provider) {
-        super.loadAdditional(tag, provider);
-        net.minecraft.nbt.CompoundTag eTag = net.nicotfpn.alientech.util.SafeNBT.getCompound(tag, "PrimalEntropy");
-        if (eTag != null) {
-            try {
-                entropyStorage.load(eTag);
-            } catch (Exception ignored) {
-            }
-        }
-    }
-
-    // ==================== Recipe Cache Invalidation ====================
-
-    @Override
-    protected void markInventoryDirty() {
-        super.markInventoryDirty();
-        recipeCacheDirty = true;
+        setChanged();
     }
 
     // ==================== Recipe Lookup ====================
@@ -262,20 +192,77 @@ public class PrimalCatalystBlockEntity extends AbstractMachineBlockEntity implem
     private PrimalCatalystRecipe findRecipe() {
         if (level == null)
             return null;
-
         PrimalCatalystRecipeInput input = new PrimalCatalystRecipeInput(
-                inventory.getHandler().getStackInSlot(INPUT_SLOT_1),
-                inventory.getHandler().getStackInSlot(INPUT_SLOT_2),
-                inventory.getHandler().getStackInSlot(INPUT_SLOT_3));
-
-        RecipeManager recipeManager = level.getRecipeManager();
-        Optional<RecipeHolder<PrimalCatalystRecipe>> recipe = recipeManager
-                .getRecipeFor(ModRecipes.PRIMAL_CATALYST_TYPE.get(), input, level);
-
-        return recipe.map(RecipeHolder::value).orElse(null);
+                inventoryComponent.getHandler().getStackInSlot(INPUT_SLOT_1),
+                inventoryComponent.getHandler().getStackInSlot(INPUT_SLOT_2),
+                inventoryComponent.getHandler().getStackInSlot(INPUT_SLOT_3));
+        RecipeManager rm = level.getRecipeManager();
+        Optional<RecipeHolder<PrimalCatalystRecipe>> found = rm.getRecipeFor(ModRecipes.PRIMAL_CATALYST_TYPE.get(),
+                input, level);
+        return found.map(RecipeHolder::value).orElse(null);
     }
 
-    // ==================== Menu Provider ====================
+    // ==================== Component Accessors ====================
+
+    public net.neoforged.neoforge.items.IItemHandler getItemHandler() {
+        return inventoryComponent.getHandler();
+    }
+
+    public net.neoforged.neoforge.energy.IEnergyStorage getEnergyStorage() {
+        return energyComponent.getEnergyStorage();
+    }
+
+    /** Expose entropy handler for capability registration. */
+    public net.nicotfpn.alientech.entropy.IEntropyHandler getEntropyHandler() {
+        return new net.nicotfpn.alientech.entropy.IEntropyHandler() {
+            @Override
+            public long getEntropy() {
+                return entropyComponent.getEntropyStored();
+            }
+
+            @Override
+            public long getMaxEntropy() {
+                return entropyComponent.getMaxEntropy();
+            }
+
+            @Override
+            public long insertEntropy(long a, boolean sim) {
+                long space = entropyComponent.getMaxEntropy() - entropyComponent.getEntropyStored();
+                long acc = Math.min(a, space);
+                if (!sim && acc > 0)
+                    entropyComponent.addEntropy(acc);
+                return acc;
+            }
+
+            @Override
+            public long extractEntropy(long a, boolean sim) {
+                long ex = Math.min(a, entropyComponent.getEntropyStored());
+                if (!sim && ex > 0)
+                    entropyComponent.consumeEntropy(ex);
+                return ex;
+            }
+
+            @Override
+            public boolean canInsert() {
+                return true;
+            }
+
+            @Override
+            public boolean canExtract() {
+                return false;
+            }
+        };
+    }
+
+    // ==================== Drops ====================
+
+    @Override
+    public void drops() {
+        if (level != null)
+            inventoryComponent.dropAll(level, worldPosition);
+    }
+
+    // ==================== MenuProvider ====================
 
     @Override
     public @NotNull Component getDisplayName() {
@@ -284,8 +271,42 @@ public class PrimalCatalystBlockEntity extends AbstractMachineBlockEntity implem
 
     @Nullable
     @Override
-    public AbstractContainerMenu createMenu(int containerId, @NotNull Inventory playerInventory,
-            @NotNull Player player) {
-        return new PrimalCatalystMenu(containerId, playerInventory, this, this.data);
+    public AbstractContainerMenu createMenu(int id, @NotNull Inventory inv, @NotNull Player player) {
+        return new PrimalCatalystMenu(id, inv, this);
+    }
+
+    // ==================== Persistence ====================
+
+    @Override
+    public void saveAdditional(@NotNull CompoundTag tag, @NotNull HolderLookup.Provider provider) {
+        super.saveAdditional(tag, provider); // Saves ECS components
+    }
+
+    @Override
+    public void loadAdditional(@NotNull CompoundTag tag, @NotNull HolderLookup.Provider provider) {
+        super.loadAdditional(tag, provider); // Loads ECS components
+
+        // === Legacy NBT Migration (AbstractMachineBlockEntity format) ===
+        if (!tag.contains("Components")) {
+            // Energy
+            if (tag.contains("MachineEnergy")) {
+                CompoundTag et = tag.getCompound("MachineEnergy");
+                if (et.contains("Stored"))
+                    energyComponent.getEnergyStorage().setEnergy(et.getInt("Stored"));
+            }
+            // Entropy
+            if (tag.contains("PrimalEntropy")) {
+                CompoundTag eTag = tag.getCompound("PrimalEntropy");
+                if (eTag.contains("Entropy"))
+                    entropyComponent.setEntropyStored(eTag.getLong("Entropy"));
+            }
+            // Processor progress
+            if (tag.contains("MachineProcessor")) {
+                CompoundTag pt = tag.getCompound("MachineProcessor");
+                int p = SafeNBT.getInt(pt, "Progress", 0);
+                if (p > 0)
+                    processingComponent.setProgress(p);
+            }
+        }
     }
 }

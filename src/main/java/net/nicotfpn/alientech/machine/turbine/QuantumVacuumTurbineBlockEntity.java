@@ -17,6 +17,10 @@ import net.nicotfpn.alientech.item.ModItems;
 import net.nicotfpn.alientech.machine.core.AlienMachineBlockEntity;
 import net.nicotfpn.alientech.machine.core.component.EnergyComponent;
 import net.nicotfpn.alientech.machine.core.component.InventoryComponent;
+import net.nicotfpn.alientech.machine.core.component.SideConfigComponent;
+import net.nicotfpn.alientech.machine.core.component.AutoTransferComponent;
+import net.nicotfpn.alientech.network.sideconfig.CapabilityType;
+import net.nicotfpn.alientech.network.sideconfig.IOSideMode;
 import net.nicotfpn.alientech.screen.QuantumVacuumTurbineMenu;
 import net.nicotfpn.alientech.util.SafeNBT;
 import net.nicotfpn.alientech.util.StateValidator;
@@ -40,6 +44,8 @@ public class QuantumVacuumTurbineBlockEntity extends AlienMachineBlockEntity imp
     // ==================== Components ====================
     public final InventoryComponent inventoryComponent;
     public final EnergyComponent energyComponent;
+    public final SideConfigComponent sideConfig;
+    public final AutoTransferComponent autoTransfer;
 
     // ==================== Fuel Burn State (volatile, restored from NBT)
     // ====================
@@ -52,11 +58,6 @@ public class QuantumVacuumTurbineBlockEntity extends AlienMachineBlockEntity imp
     private int boostTicksRemaining = 0;
     private static final int BOOST_EXPIRY_TICKS = 250;
 
-    // ==================== Volatile Tracking (NOT saved to NBT)
-    // ====================
-    /** Tracks last tick's entropy draw for UI display */
-    private long lastEntropyDraw = 0;
-
     // ==================== Constructor ====================
 
     public QuantumVacuumTurbineBlockEntity(BlockPos pos, BlockState state) {
@@ -64,12 +65,24 @@ public class QuantumVacuumTurbineBlockEntity extends AlienMachineBlockEntity imp
 
         // 1 slot: fuel (Decaying Graviton)
         this.inventoryComponent = new InventoryComponent(this, 1, this::isSlotValid);
-        addComponent(this.inventoryComponent);
+        registerComponent(this.inventoryComponent);
 
         // FE output buffer — receives 0, extracts at capacity rate
         this.energyComponent = new EnergyComponent(this,
                 Config.QVT_ENERGY_CAPACITY.get(), 0, Config.QVT_ENERGY_CAPACITY.get());
-        addComponent(this.energyComponent);
+        registerComponent(this.energyComponent);
+
+        // Wave 3: Side Configuration
+        this.sideConfig = new SideConfigComponent(this);
+        registerComponent(this.sideConfig);
+
+        // Wave 3: Auto Transfer (PUSH/PULL)
+        this.autoTransfer = new AutoTransferComponent(this);
+        this.autoTransfer.injectSideConfig(this.sideConfig);
+        registerComponent(this.autoTransfer);
+
+        // Inicializar wrappers após registro de todos os componentes
+        initSidedWrappers();
     }
 
     // ==================== Slot Validation ====================
@@ -153,6 +166,11 @@ public class QuantumVacuumTurbineBlockEntity extends AlienMachineBlockEntity imp
         for (Direction dir : Direction.values()) {
             if (energyComponent.getEnergyStorage().getEnergyStored() <= 0)
                 break;
+
+            if (sideConfig.getMode(dir, CapabilityType.ENERGY) != IOSideMode.OUTPUT &&
+                    sideConfig.getMode(dir, CapabilityType.ENERGY) != IOSideMode.PUSH) {
+                continue;
+            }
 
             var cap = level.getCapability(
                     net.neoforged.neoforge.capabilities.Capabilities.EnergyStorage.BLOCK,
